@@ -108,5 +108,4 @@ final_ho, final_ih = forward(w_ih, w_ho)
 #2. make epochs
 #3. do gradient checker
 #4. make into a class
-#5. check mini batches -- probably add tuples to include the labels
-#6. one hot encoding
+#5. one hot encoding
