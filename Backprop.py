@@ -7,22 +7,23 @@ import copy
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
-# Will load MNIST data and return the first and last specified number of training & testing images respectively
-def load_data(num_train, num_test, directory='mnist'):
-    mndata = MNIST(directory)
-    train_dat, train_lab = mndata.load_training()
-    test_dat, test_lab = mndata.load_testing()
-    return np.array(train_dat[:num_train]), np.array(train_lab[:num_train]), \
-           np.array(test_dat[-num_test:]), np.array(test_lab[-num_test:])
+#Will load MNIST data and return the first and last specified number of training & testing images respectively
+mndata = MNIST('mnist')
+train_dat, train_lab = mndata.load_training()
+test_dat, test_lab = mndata.load_testing()
 
-# Images /127.5 - 1 so that they are in range [-1,1]
-def z_score_data(train_dat, test_dat):
-    train_dat = train_dat/127.5 -1
-    test_dat = test_dat/127.5 - 1
-    return train_dat, test_dat
+#divide by 127.5 so that they are in range [0...2]
+train_dat = np.array(train_dat, dtype=np.float32)
+train_dat /= 127.5
+train_dat = train_dat - 1
+test_dat = np.array(test_dat, dtype=np.float32)
+test_dat /= 127.5
+test_dat = test_dat - 1
 
-##<editor-fold desc="Forward Propagation">
-##</editor-fold>
+#initializing weights
+mu, sigma = 0, 0.1
+w_ih = np.random.normal(mu, sigma, (785,64))
+w_ho = np.random.normal(mu, sigma, (65,10))
 
 #minibatch of 128
 def minibatch(f, n):
@@ -40,6 +41,8 @@ def sigmoid(h, derivative = False):
 
 #Add a 1 in front of every input vector that accounts for the bias weight
 def add_bias_term(x_array):
+    a = np.array(x_array)
+    x_bias = np.insert(a, 0, 1, axis = 1)
     return [np.append(x,1) for x in x_array]
 
 def softmax(j):
@@ -64,36 +67,31 @@ def forward(w_input_hidden, w_hidden_output):
     return output_ho, output_ih
 
 #backpropogation
+
 def backprop(input_data, t, output_ho,output_ih, w_hidden_output, w_input_hidden):
 
     #where t is the expected and y is the output (from forwards_prop)
     delta_k = t - output_ho
-
-    #w_jk
-    z = softmax(output_ih)
-    w_hidden_output += np.dot(z.T, delta_k)
+    w_hidden_output = w_hidden_output[1:]
 
     #w_ij
     error = delta_k.T * sigmoid(output_ih, derivative = True)
     c = np.dot(error, w_hidden_output.T)
     w_input_hidden += np.dot(input_data.T, c)
 
+    #w_jk
+    z = softmax(output_ih)
+    w_hidden_output += np.dot(z.T, delta_k)
+
     return w_hidden_output, w_input_hidden
 
-# IMPLEMENTATION:
-
-# 1. Load Data
-num_train = 10000
-num_test = 1000
-tr_i, tr_l, test_i, test_l = load_data(num_train, num_test)
-
-# 2. Z-score data
-tr_i, test_i = z_score_data(tr_i, test_i)
-
-#initializing weights
-mu, sigma = 0, 0.1
-w_ih = np.random.normal(mu, sigma, (785,64))
-w_ho = np.random.normal(mu, sigma, (65,10))
+def hold_out(train_im, train_lab, percent):
+    num_hold_out = int(np.round(1/float(percent) * len(train_im)))
+    hold_out_im = train_im[-num_hold_out:]
+    hold_out_labels = train_lab[-num_hold_out:]
+    train_im = train_im[:-num_hold_out]
+    train_lab = train_lab[:-num_hold_out]
+    return hold_out_im, hold_out_labels, train_im, train_lab
 
 #create minibatch
 #i think i messed this up
@@ -105,7 +103,6 @@ final_ho, final_ih = forward(w_ih, w_ho)
 #w_ho, w_ih = backprop( , ,final_ho, final_ih, w_ho, w_ih)
 
 #1. add learning rate
-#2. add holdout
 #3. do gradient checker
 #4. make into a class
 #5. check mini batches -- probably add tuples to include the labels
