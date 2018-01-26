@@ -111,7 +111,7 @@ cat_mini = one_hot_encoding(label_mini)
 input_bias = add_bias_term(input_mini)
 
 final_ho, final_ih = forward(w_ih, w_ho)
-#w_ho, w_ih = backprop(input_mini,cat_mini,final_ho, final_ih, w_ho, w_ih)
+w_ho, w_ih = backprop(input_mini,cat_mini,final_ho, final_ih, w_ho, w_ih)
 
 #1. add learning rate
 #2. make epochs
