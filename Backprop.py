@@ -83,6 +83,14 @@ def backprop(input_data, t, output_ho,output_ih, w_hidden_output, w_input_hidden
 
     return w_hidden_output, w_input_hidden
 
+def hold_out(train_im, train_lab, percent):
+    num_hold_out = int(np.round(1/float(percent) * len(train_im)))
+    hold_out_im = train_im[-num_hold_out:]
+    hold_out_labels = train_lab[-num_hold_out:]
+    train_im = train_im[:-num_hold_out]
+    train_lab = train_lab[:-num_hold_out]
+    return hold_out_im, hold_out_labels, train_im, train_lab
+
 #create minibatch
 #i think i messed this up
 input_mini = minibatch(train_dat,128)
