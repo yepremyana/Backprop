@@ -41,7 +41,10 @@ def sigmoid(h, derivative = False):
 
 #Add a 1 in front of every input vector that accounts for the bias weight
 def add_bias_term(x_array):
-    return [np.append(x,1) for x in x_array]
+    x_array = np.array(x_array)
+    for x in x_array:
+        x = np.insert(x,0,1)
+    return x
 
 def softmax(j):
     ak = np.exp(j)
