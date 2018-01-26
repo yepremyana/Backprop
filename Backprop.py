@@ -7,23 +7,19 @@ import copy
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
-#Will load MNIST data and return the first and last specified number of training & testing images respectively
-mndata = MNIST('mnist')
-train_dat, train_lab = mndata.load_training()
-test_dat, test_lab = mndata.load_testing()
+# Will load MNIST data and return the first and last specified number of training & testing images respectively
+def load_data(num_train, num_test, directory='mnist'):
+    mndata = MNIST(directory)
+    train_dat, train_lab = mndata.load_training()
+    test_dat, test_lab = mndata.load_testing()
+    return np.array(train_dat[:num_train]), np.array(train_lab[:num_train]), \
+           np.array(test_dat[-num_test:]), np.array(test_lab[-num_test:])
 
-#divide by 127.5 so that they are in range [0...2]
-train_dat = np.array(train_dat, dtype=np.float32)
-train_dat /= 127.5
-train_dat = train_dat - 1
-test_dat = np.array(test_dat, dtype=np.float32)
-test_dat /= 127.5
-test_dat = test_dat - 1
-
-#initializing weights
-mu, sigma = 0, 0.1
-w_ih = np.random.normal(mu, sigma, (785,64))
-w_ho = np.random.normal(mu, sigma, (65,10))
+# Images /127.5 - 1 so that they are in range [-1,1]
+def z_score_data(train_dat, test_dat):
+    train_dat = train_dat/127.5 -1
+    test_dat = test_dat/127.5 - 1
+    return train_dat, test_dat
 
 #minibatch of 128
 def minibatch(f, n):
@@ -92,6 +88,20 @@ def hold_out(train_im, train_lab, percent):
     train_im = train_im[:-num_hold_out]
     train_lab = train_lab[:-num_hold_out]
     return hold_out_im, hold_out_labels, train_im, train_lab
+
+
+# 1. Load Data
+num_train = 10000
+num_test = 1000
+tr_i, tr_l, test_i, test_l = load_data(num_train, num_test)
+
+# 2. Z-score data
+tr_i, test_i = z_score_data(tr_i, test_i)
+
+#initializing weights
+mu, sigma = 0, 0.1
+w_ih = np.random.normal(mu, sigma, (785,64))
+w_ho = np.random.normal(mu, sigma, (65,10))
 
 #create minibatch
 #i think i messed this up
