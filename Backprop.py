@@ -41,6 +41,8 @@ def sigmoid(h, derivative = False):
 
 #Add a 1 in front of every input vector that accounts for the bias weight
 def add_bias_term(x_array):
+    a = np.array(x_array)
+    x_bias = np.insert(a, 0, 1, axis = 1)
     return [np.append(x,1) for x in x_array]
 
 def softmax(j):
@@ -76,7 +78,7 @@ def backprop(input_data, t, output_ho,output_ih, w_hidden_output, w_input_hidden
     error = delta_k.T * sigmoid(output_ih, derivative = True)
     c = np.dot(error, w_hidden_output.T)
     w_input_hidden += np.dot(input_data.T, c)
-    
+
     #w_jk
     z = softmax(output_ih)
     w_hidden_output += np.dot(z.T, delta_k)
@@ -103,4 +105,4 @@ final_ho, final_ih = forward(w_ih, w_ho)
 #1. add learning rate
 #3. do gradient checker
 #4. make into a class
-#5. check mini batches -- probably add tuples to include the labels, add bias
+#5. check mini batches -- probably add tuples to include the labels
