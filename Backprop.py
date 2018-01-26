@@ -70,16 +70,16 @@ def backprop(input_data, t, output_ho,output_ih, w_hidden_output, w_input_hidden
 
     #where t is the expected and y is the output (from forwards_prop)
     delta_k = t - output_ho
-
-    #w_jk
-    z = softmax(output_ih)
     w_hidden_output = w_hidden_output[1:]
-    w_hidden_output += np.dot(z.T, delta_k)
 
     #w_ij
     error = delta_k.T * sigmoid(output_ih, derivative = True)
     c = np.dot(error, w_hidden_output.T)
     w_input_hidden += np.dot(input_data.T, c)
+    
+    #w_jk
+    z = softmax(output_ih)
+    w_hidden_output += np.dot(z.T, delta_k)
 
     return w_hidden_output, w_input_hidden
 
@@ -101,7 +101,6 @@ final_ho, final_ih = forward(w_ih, w_ho)
 #w_ho, w_ih = backprop( , ,final_ho, final_ih, w_ho, w_ih)
 
 #1. add learning rate
-#2. add holdout
 #3. do gradient checker
 #4. make into a class
-#5. check mini batches -- probably add tuples to include the labels
+#5. check mini batches -- probably add tuples to include the labels, add bias
