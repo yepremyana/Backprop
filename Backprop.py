@@ -41,10 +41,7 @@ def sigmoid(h, derivative = False):
 
 #Add a 1 in front of every input vector that accounts for the bias weight
 def add_bias_term(x_array):
-    x_array = np.array(x_array)
-    for x in x_array:
-        x = np.insert(x,0,1)
-    return x
+    return [np.append(x,1) for x in x_array]
 
 def softmax(j):
     ak = np.exp(j)
@@ -76,6 +73,7 @@ def backprop(input_data, t, output_ho,output_ih, w_hidden_output, w_input_hidden
 
     #w_jk
     z = softmax(output_ih)
+    w_hidden_output = w_hidden_output[1:]
     w_hidden_output += np.dot(z.T, delta_k)
 
     #w_ij
