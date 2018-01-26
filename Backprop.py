@@ -46,10 +46,11 @@ def add_bias_term(x_array):
     a = np.array(x_array)
     x_bias = np.insert(a, 0, 1, axis = 1)
     return [np.append(x,1) for x in x_array]
-def one_hot_encoding(label, label_to_1hotencode):
+
+def one_hot_encoding(label_to_1hotencode):
     encoded_list = list()
     for label in label_to_1hotencode:
-        label_zero = [0 for _ in xrange(len(label_to_1hotencode))]
+        label_zero = [0 for _ in xrange(10)]
         label_zero[label] = 1
         encoded_list.append(label_zero)
     return encoded_list
@@ -105,13 +106,12 @@ def hold_out(train_im, train_lab, percent):
     return hold_out_im, hold_out_labels, train_im, train_lab
 
 #create minibatch
-#i think i messed this up
 input_mini, label_mini = minibatch(train_dat, train_lab, 0, 128)
-#fix this
+cat_mini = one_hot_encoding(label_mini)
 input_bias = add_bias_term(input_mini)
 
 final_ho, final_ih = forward(w_ih, w_ho)
-#w_ho, w_ih = backprop(, label_mini,final_ho, final_ih, w_ho, w_ih)
+#w_ho, w_ih = backprop(input_mini,cat_mini,final_ho, final_ih, w_ho, w_ih)
 
 #1. add learning rate
 #2. make epochs
