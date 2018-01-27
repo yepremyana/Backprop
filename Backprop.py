@@ -2,8 +2,6 @@ from mnist import MNIST
 import numpy as np
 import math
 import random
-import pdb
-import copy
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
@@ -63,7 +61,7 @@ def softmax(j):
     return ak / (1.0 * sum_ak)
 
 #feedforward
-def forward(w_input_hidden, w_hidden_output):
+def forward(input_bias, w_input_hidden, w_hidden_output):
 
     #input to hidden
     input_ih = activation(input_bias, w_input_hidden)
@@ -89,13 +87,15 @@ def backprop(input_data, t, output_ho,output_ih, w_hidden_output, w_input_hidden
     activation_ih = activation(input_data, w_input_hidden)
     error = sigmoid(activation_ih, derivative = True)
     c = error * np.dot(delta_k, w_hidden_output.T)
-    w_input_hidden += np.dot(input_data.T, c)
+    gradient_ih = np.dot(input_data.T, c)
+    w_input_hidden += gradient_ih
 
     #w_jk
     z = softmax(output_ih)
-    w_hidden_output += np.dot(z.T, delta_k)
+    gradient_ho = np.dot(z.T, delta_k)
+    w_hidden_output += gradient_ho
 
-    return w_hidden_output, w_input_hidden
+    return w_hidden_output, w_input_hidden, gradient_ih, gradient_ho
 
 def hold_out(train_im, train_lab, percent):
     num_hold_out = int(np.round(1/float(percent) * len(train_im)))
@@ -105,17 +105,44 @@ def hold_out(train_im, train_lab, percent):
     train_lab = train_lab[:-num_hold_out]
     return hold_out_im, hold_out_labels, train_im, train_lab
 
+def num_approx(w_ih, w_ho, train_im, epsilon = .00001):
+    epsilon_ih = epsilon*np.ones(w_ih.shape)
+    epsilon_ho = epsilon*np.ones(w_ho.shape)
+
+    #we will compute E_add first
+    E_add_ih,E_add_ho = forward(train_im, w_ih + epsilon_ih, w_ho + epsilon_ho)
+    #E_sub
+    E_sub_ih, E_sub_ho = forward(train_im, w_ih - epsilon_ih, w_ho - epsilon_ho)
+    #compute approximation (make this a function)
+    num_approx_ih = numerical_approx_equation(E_add_ih - E_sub_ih)
+    num_approx_ho = numerical_approx_equation(E_add_ho - E_sub_ho)
+
+    return num_approx_ih, num_approx_ho
+
+def numerical_approx_equation(E_plus, E_minus, epsilon = .00001):
+    return (E_plus - E_minus) / (2 * (epsilon*np.ones(E_plus.shape)))
+
+def gradient_checker(num_approx, grad_back):
+    error = num_approx - grad_back
+    if error < .0000000001:
+        return "It works"
+    else:
+        return "Check your code"
+
+
 #create minibatch
 input_mini, label_mini = minibatch(train_dat, train_lab, 0, 128)
 cat_mini = one_hot_encoding(label_mini)
 input_bias = add_bias_term(input_mini)
 
-final_ho, final_ih = forward(w_ih, w_ho)
-w_ho, w_ih = backprop(input_mini,cat_mini,final_ho, final_ih, w_ho, w_ih)
+#forward and backwards prop
+final_ho, final_ih = forward(input_bias,w_ih, w_ho)
+w_ho, w_ih, grad_ho, grad_ih = backprop(input_mini,cat_mini,final_ho, final_ih, w_ho, w_ih)
 
 #1. add learning rate
 #2. make epochs
-#3. do gradient checker
+#3. do gradient checker (correct? make script to check)
 #4. make into a class
 #5. fix the weights so that they are 64
 #6. make w_ij and w_jk functions
+#7. implement holdout
