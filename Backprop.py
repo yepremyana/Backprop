@@ -95,7 +95,7 @@ def backprop(input_data, t, output_ho,output_ih, w_hidden_output, w_input_hidden
     gradient_ho = np.dot(z.T, delta_k)
     w_hidden_output += gradient_ho
 
-    return w_hidden_output, w_input_hidden, gradient_ih, gradient_ho
+    return w_hidden_output, w_input_hidden, gradient_ho, gradient_ih
 
 def hold_out(train_im, train_lab, percent):
     num_hold_out = int(np.round(1/float(percent) * len(train_im)))
@@ -138,6 +138,11 @@ input_bias = add_bias_term(input_mini)
 #forward and backwards prop
 final_ho, final_ih = forward(input_bias,w_ih, w_ho)
 w_ho, w_ih, grad_ho, grad_ih = backprop(input_mini,cat_mini,final_ho, final_ih, w_ho, w_ih)
+
+#gradient gradient_checker
+#approx_ih, approx_ho = num_approx(w_ih, w_ho, input_bias, epsilon = .00001)
+#check_ih = gradient_checker(approx_ih, grad_ih)
+#check_ih = gradient_checker(approx_ho, grad_ho)
 
 #1. add learning rate
 #2. make epochs
