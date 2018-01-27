@@ -22,8 +22,10 @@ def z_score_data(train_dat, test_dat):
     return train_dat, test_dat
 
 #minibatch of 128
-def minibatch(f, n):
-    return random.sample(f, n)
+def minibatch(train_set, train_labs, n, batch_size):
+    sample = train_set[n*batch_size:(n*batch_size + batch_size)]
+    label = train_labs[n*batch_size:(n*batch_size + batch_size)]
+    return sample,label
 
 def activation(x, w):
     return np.dot(x, w)
@@ -40,6 +42,14 @@ def add_bias_term(x_array):
     a = np.array(x_array)
     x_bias = np.insert(a, 0, 1, axis = 1)
     return [np.append(x,1) for x in x_array]
+
+def one_hot_encoding(label_to_1hotencode):
+    encoded_list = list()
+    for label in label_to_1hotencode:
+        label_zero = [0 for _ in xrange(10)]
+        label_zero[label] = 1
+        encoded_list.append(label_zero)
+    return encoded_list
 
 def softmax(j):
     ak = np.exp(j)
@@ -69,10 +79,12 @@ def backprop(input_data, t, output_ho,output_ih, w_hidden_output, w_input_hidden
     #where t is the expected and y is the output (from forwards_prop)
     delta_k = t - output_ho
     w_hidden_output = w_hidden_output[1:]
+    w_input_hidden = w_input_hidden[1:]
 
     #w_ij
-    error = delta_k.T * sigmoid(output_ih, derivative = True)
-    c = np.dot(error, w_hidden_output.T)
+    activation_ih = activation(input_data, w_input_hidden)
+    error = sigmoid(activation_ih, derivative = True)
+    c = error * np.dot(delta_k, w_hidden_output.T)
     w_input_hidden += np.dot(input_data.T, c)
 
     #w_jk
@@ -104,15 +116,16 @@ w_ih = np.random.normal(mu, sigma, (785,64))
 w_ho = np.random.normal(mu, sigma, (65,10))
 
 #create minibatch
-#i think i messed this up
-input_mini = minibatch(train_dat,128)
-#fix this
+input_mini, label_mini = minibatch(train_dat, train_lab, 0, 128)
+cat_mini = one_hot_encoding(label_mini)
 input_bias = add_bias_term(input_mini)
 
 final_ho, final_ih = forward(w_ih, w_ho)
-#w_ho, w_ih = backprop( , ,final_ho, final_ih, w_ho, w_ih)
+w_ho, w_ih = backprop(input_mini,cat_mini,final_ho, final_ih, w_ho, w_ih)
 
 #1. add learning rate
+#2. make epochs
 #3. do gradient checker
 #4. make into a class
-#5. check mini batches -- probably add tuples to include the labels
+#5. fix the weights so that they are 64
+#6. make w_ij and w_jk functions
