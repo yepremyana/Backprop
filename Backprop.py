@@ -4,30 +4,45 @@ import math
 import random
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+import pdb
+import copy
 
-#Will load MNIST data and return the first and last specified number of training & testing images respectively
-mndata = MNIST('mnist')
-train_dat, train_lab = mndata.load_training()
-test_dat, test_lab = mndata.load_testing()
 
-#divide by 127.5 so that they are in range [0...2]
-train_dat = np.array(train_dat, dtype=np.float32)
-train_dat /= 127.5
-train_dat = train_dat - 1
-test_dat = np.array(test_dat, dtype=np.float32)
-test_dat /= 127.5
-test_dat = test_dat - 1
+#<editor-fold desc="Print Weights">
+#Prints Image. Input: 1D array 784
+def mnist_printer(mnist_array, save=False):
+    pixmap = weights_to_2d(mnist_array).astype(float)
+    # print pixmap.shape #28x28
+    plt.imshow(pixmap, cmap=cm.gray, interpolation='nearest')
+    plt.show(block=False)
 
-#initializing weights
-mu, sigma = 0, 0.1
-w_ih = np.random.normal(mu, sigma, (785,64))
-w_ho = np.random.normal(mu, sigma, (65,10))
+# takes 1D array turns it into 2D arrays. 784 weights to 28x28
+def weights_to_2d(weights):
+    dim1 = int(np.sqrt(len(weights)))
+    dim2 = int(len(weights) / dim1)
+    weights = weights[:dim1*dim2] # This is for adding the occlusions.
+    return copy.deepcopy(np.reshape(weights, (dim1, dim2)))
+#</editor-fold>
+
+# Will load MNIST data and return the first and last specified number of training & testing images respectively
+def load_data(num_train, num_test, directory='mnist'):
+    mndata = MNIST(directory)
+    train_dat, train_lab = mndata.load_training()
+    test_dat, test_lab = mndata.load_testing()
+    return np.array(train_dat[:num_train]), np.array(train_lab[:num_train]), \
+           np.array(test_dat[-num_test:]), np.array(test_lab[-num_test:])
+
+# Images /127.5 - 1 so that they are in range [-1,1]
+def z_score_data(train_dat, test_dat):
+    train_dat = train_dat/127.5 -1
+    test_dat = test_dat/127.5 - 1
+    return train_dat, test_dat
 
 #minibatch of 128
 def minibatch(train_set, train_labs, n, batch_size):
-    sample = train_set[n*batch_size:(n*batch_size + batch_size)]
-    label = train_labs[n*batch_size:(n*batch_size + batch_size)]
-    return sample,label
+    batch = train_set[n*batch_size : (n*batch_size + batch_size), :]
+    labels = train_labs[n*batch_size : (n*batch_size + batch_size)]
+    return batch,labels
 
 def activation(x, w):
     return np.dot(x, w)
@@ -43,7 +58,7 @@ def sigmoid(h, derivative = False):
 def add_bias_term(x_array):
     a = np.array(x_array)
     x_bias = np.insert(a, 0, 1, axis = 1)
-    return [np.append(x,1) for x in x_array]
+    return np.array([np.append(1,x) for x in x_array])
 
 def one_hot_encoding(label_to_1hotencode):
     encoded_list = list()
@@ -61,21 +76,20 @@ def softmax(j):
     return ak / (1.0 * sum_ak)
 
 #feedforward
-def forward(input_bias, w_input_hidden, w_hidden_output):
-
+def forward_ih(input_batch, w_input_hidden):
     #input to hidden
-    input_ih = activation(input_bias, w_input_hidden)
-    output_ih = sigmoid(input_ih)
-    output_ih_bias = add_bias_term(output_ih)
+    a_j = activation(input_batch, w_input_hidden) # Weighted sum of inputs
+    g_h = sigmoid(a_j)                            # Activation Function
+    return g_h
 
+def forward_ho(hidden_activations, w_hidden_output):
     #hidden to output
-    input_ho = activation(output_ih_bias, w_hidden_output)
-    output_ho = softmax(input_ho)
-
-    return output_ho, output_ih
+    a_k = activation(hidden_activations, w_hidden_output) # Weighted sum of inputs
+    print a_k.shape
+    g_o = softmax(a_k)                               # Activation Function
+    return g_o
 
 #backpropogation
-
 def backprop(input_data, t, output_ho,output_ih, w_hidden_output, w_input_hidden):
 
     #where t is the expected and y is the output (from forwards_prop)
@@ -129,15 +143,60 @@ def gradient_checker(num_approx, grad_back):
     else:
         return "Check your code"
 
+##############################################
+# IMPLEMENTATION:
 
-#create minibatch
-input_mini, label_mini = minibatch(train_dat, train_lab, 0, 128)
-cat_mini = one_hot_encoding(label_mini)
-input_bias = add_bias_term(input_mini)
+# 1. Load Data
+num_train = 10000
+num_test = 1000
+tr_i, tr_l, test_i, test_l = load_data(num_train, num_test)
 
-#forward and backwards prop
-final_ho, final_ih = forward(input_bias,w_ih, w_ho)
-w_ho, w_ih, grad_ho, grad_ih = backprop(input_mini,cat_mini,final_ho, final_ih, w_ho, w_ih)
+# 2. Z-score data
+tr_i, test_i = z_score_data(tr_i, test_i)
+
+# mnist_printer(tr_i[0])
+
+# Initialize weights
+mu, sigma = 0, 0.1
+w_ih = np.random.normal(mu, sigma, (785,64))
+w_ho = np.random.normal(mu, sigma, (65,10))
+
+# Create minibatch
+batch_i, batch_l = minibatch(tr_i, tr_l, 0, 2)
+batch_1h_l = one_hot_encoding(batch_l)
+batch_i = add_bias_term(batch_i)
+
+#For_Prop: input to hidden
+g_h = forward_ih(batch_i,w_ih) # Activation Function of hidden units
+g_h = add_bias_term(g_h)       # Add bias before passing Activations to output layer
+#For_Prop: hidden to output
+g_o = forward_ho(g_h, w_ho) # Activation Function of output units
+
+
+
+#Understanding H to O
+a_k = activation(g_o, w_ho) # Weighted sum of inputs
+print a_k.shape
+# g_o = softmax(a_k)                               # Activation Function
+
+
+
+
+ak = np.exp(g_o)
+sum_ak = np.sum(ak, 1)
+sum_ak = np.reshape(sum_ak, (ak.shape[0], 1))
+sum_ak = np.repeat(sum_ak, ak.shape[1], axis=1)
+return ak / (1.0 * sum_ak)
+
+
+
+
+
+
+
+
+# Backwards prop
+w_ho, w_ih, grad_ho, grad_ih = backprop(batch_i,batch_1h_l,final_ho, final_ih, w_ho, w_ih)
 
 #gradient gradient_checker
 #approx_ih, approx_ho = num_approx(w_ih, w_ho, input_bias, epsilon = .00001)
