@@ -161,8 +161,12 @@ tr_i, test_i = z_score_data(tr_i, test_i)
 
 # Initialize weights
 mu, sigma = 0, 0.1
-w_ih = np.random.normal(mu, sigma, (785,64))
-w_ho = np.random.normal(mu, sigma, (65,10))
+w_ih = np.random.normal(mu, sigma, (784,64))
+w_ih = add_bias_term(w_ih)
+
+#add bias term
+w_ho = np.random.normal(mu, sigma, (64,10))
+w_ho = add_bias_term(w_ho)
 
 # Create minibatch
 batch_i, batch_l = minibatch(tr_i, tr_l, 0, 2)
