@@ -72,7 +72,7 @@ def softmax(activation_k):
     exp_ak = np.exp(activation_k)
     sum_exp_ak = np.sum(exp_ak, 1)
     sum_exp_ak = np.reshape(sum_exp_ak, (exp_ak.shape[0], 1))
-    sum_exp_ak = np.repeat(sum_exp_ak, ak.shape[1], axis=1)
+    sum_exp_ak = np.repeat(sum_exp_ak, exp_ak.shape[1], axis=1)
     return exp_ak / (1.0 * sum_exp_ak)
 
 #feedforward
@@ -128,7 +128,7 @@ def num_approx(w_ih, w_ho, train_im, epsilon = .00001):
 
     _, E_add_ho = forward(train_im, w_ih, w_ho + epsilon_ho)
     _, E_sub_ho = forward(train_im, w_ih, w_ho + epsilon_ho)
-    
+
     #compute approximation (make this a function)
     num_approx_ih = numerical_approx_equation(E_add_ih, E_sub_ih)
     num_approx_ho = numerical_approx_equation(E_add_ho, E_sub_ho)
@@ -166,21 +166,21 @@ w_ho = np.random.normal(mu, sigma, (65,10))
 # Create minibatch
 batch_i, batch_l = minibatch(tr_i, tr_l, 0, 2)
 batch_1h_l = one_hot_encoding(batch_l)
-batch_i = add_bias_term(batch_i)
+batch_i_b = add_bias_term(batch_i)
 
 #For_Prop: input to hidden
-g_h = forward_ih(batch_i,w_ih) # Activation Function of hidden units
-g_h = add_bias_term(g_h)       # Add bias before passing Activations to output layer
+g_h = forward_ih(batch_i_b,w_ih) # Activation Function of hidden units
+g_h_b = add_bias_term(g_h)       # Add bias before passing Activations to output layer
 #For_Prop: hidden to output
-g_o = forward_ho(g_h, w_ho) # Activation Function of output units
+g_o = forward_ho(g_h_b, w_ho) # Activation Function of output units
 
 
 
 # Backwards prop
-w_ho, w_ih, grad_ho, grad_ih = backprop(batch_i,batch_1h_l,final_ho, final_ih, w_ho, w_ih)
+w_ho, w_ih, grad_ho, grad_ih = backprop(batch_i,batch_1h_l,g_o, g_h, w_ho, w_ih)
 
 
-
+#approx_ih, approx_ho = num_approx(w_ih, w_ho, batch_i_b, epsilon = .00001)
 
 
 
