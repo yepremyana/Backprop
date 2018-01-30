@@ -118,22 +118,23 @@ def hold_out(train_im, train_lab, percent):
     train_lab = train_lab[:-num_hold_out]
     return hold_out_im, hold_out_labels, train_im, train_lab
 
-def num_approx(w_ih, w_ho, train_im, epsilon = .00001):
-    epsilon_ih = epsilon*np.ones(w_ih.shape)
-    epsilon_ho = epsilon*np.ones(w_ho.shape)
+def num_approx_ih(w_ih, train_im, epsilon = .00001):
+    epsilon_v = epsilon*np.ones(w_ih.shape)
+    E_add = forward_ih(train_im, w_ih + epsilon_v)
+    E_sub = forward_ih(train_im, w_ih - epsilon_v)
+    #compute approximation
+    num_approx_ih = numerical_approx_equation(E_add, E_sub)
 
-    #we will compute E_add first
-    E_add_ih, _ = forward(train_im, w_ih + epsilon_ih, w_ho)
-    E_sub_ih, _ = forward(train_im, w_ih - epsilon_ih, w_ho)
+    return num_approx_ih
 
-    _, E_add_ho = forward(train_im, w_ih, w_ho + epsilon_ho)
-    _, E_sub_ho = forward(train_im, w_ih, w_ho + epsilon_ho)
+def num_approx_ho(g_h_b, w_ho, epsilon = .00001):
+    epsilon_v = epsilon*np.ones(w_ho.shape)
+    E_add = forward_ho(g_h_b, w_ho + epsilon_v)
+    E_sub = forward_ho(g_h_b, w_ho - epsilon_v)
+    #compute approximation
+    num_approx_ho = numerical_approx_equation(E_add, E_sub)
 
-    #compute approximation (make this a function)
-    num_approx_ih = numerical_approx_equation(E_add_ih, E_sub_ih)
-    num_approx_ho = numerical_approx_equation(E_add_ho, E_sub_ho)
-
-    return num_approx_ih, num_approx_ho
+    return num_approx_ho
 
 def numerical_approx_equation(E_plus, E_minus, epsilon = .00001):
     return (E_plus - E_minus) / (2 * (epsilon*np.ones(E_plus.shape)))
