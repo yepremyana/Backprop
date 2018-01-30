@@ -156,6 +156,7 @@ tr_i, tr_l, test_i, test_l = load_data(num_train, num_test)
 
 # 2. Z-score data
 tr_i, test_i = z_score_data(tr_i, test_i)
+lr = 0.00000000001
 
 # mnist_printer(tr_i[0])
 
