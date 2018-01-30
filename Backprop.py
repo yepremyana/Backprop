@@ -191,11 +191,17 @@ g_h_b = add_bias_term(g_h)       # Add bias before passing Activations to output
 #For_Prop: hidden to output
 g_o = forward_ho(g_h_b, w_ho) # Activation Function of output units
 
+#Backprop: Output to hidden:
+lr = 0.0001
+w_ho = backprop_oh(w_ho, g_h, batch_l, lr) # Update w_jk weights
+#Backprop: Hidden to input:
+
+
+
+
 #gradient gradient_checker (check this)
 approx_ih = num_approx_ih(w_ih, batch_i_b)
 approx_ho = num_approx_ho(g_h_b, w_ho)
-
-w_ho = backprop_oh(w_ho, g_h, batch_l, lr)
 
 # Backwards prop
 #w_ho, w_ih, grad_ho, grad_ih = backprop(batch_i,batch_1h_l,g_o, g_h, w_ho, w_ih)
