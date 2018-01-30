@@ -162,11 +162,11 @@ tr_i, test_i = z_score_data(tr_i, test_i)
 # Initialize weights
 mu, sigma = 0, 0.1
 w_ih = np.random.normal(mu, sigma, (784,64))
-w_ih = add_bias_term(w_ih)
+w_ih = np.vstack([np.ones(64), w_ih])
 
 #add bias term
 w_ho = np.random.normal(mu, sigma, (64,10))
-w_ho = add_bias_term(w_ho)
+w_ho = np.vstack([np.ones(10), w_ho])
 
 # Create minibatch
 batch_i, batch_l = minibatch(tr_i, tr_l, 0, 2)
@@ -179,14 +179,12 @@ g_h_b = add_bias_term(g_h)       # Add bias before passing Activations to output
 #For_Prop: hidden to output
 g_o = forward_ho(g_h_b, w_ho) # Activation Function of output units
 
-
+#gradient gradient_checker (check this)
+approx_ih = num_approx_ih(w_ih, batch_i_b)
+approx_ho = num_approx_ho(g_h_b, w_ho)
 
 # Backwards prop
 w_ho, w_ih, grad_ho, grad_ih = backprop(batch_i,batch_1h_l,g_o, g_h, w_ho, w_ih)
-
-#gradient gradient_checker
-approx_ih = num_approx_ih(w_ih, batch_i_b)
-approx_ho = num_approx_ih(g_h_b, w_ho)
 
 error_ih = gradient_checker(approx_ih, grad_ih)
 error_ho = gradient_checker(approx_ho, grad_ho)
