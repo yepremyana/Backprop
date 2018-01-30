@@ -66,14 +66,14 @@ def one_hot_encoding(label_to_1hotencode):
         label_zero = [0 for _ in xrange(10)]
         label_zero[label] = 1
         encoded_list.append(label_zero)
-    return encoded_list
+    return np.array(encoded_list)
 
 def softmax(activation_k):
-    exp_ak = np.exp(activation_k)
-    sum_exp_ak = np.sum(exp_ak, 1)
+    exp_ak = np.exp(activation_k)  # Exp of my class
+    sum_exp_ak = np.sum(exp_ak, 1) # Sum of exp of classes
     sum_exp_ak = np.reshape(sum_exp_ak, (exp_ak.shape[0], 1))
-    sum_exp_ak = np.repeat(sum_exp_ak, ak.shape[1], axis=1)
-    return exp_ak / (1.0 * sum_exp_ak)
+    sum_exp_ak = np.repeat(sum_exp_ak, exp_ak.shape[1], axis=1)
+    return exp_ak / (1.0 * sum_exp_ak) # Normalized outputs of classifier
 
 #feedforward
 def forward_ih(input_batch, w_input_hidden):
@@ -87,6 +87,17 @@ def forward_ho(hidden_activations, w_hidden_output):
     a_k = activation(hidden_activations, w_hidden_output) # Weighted sum of inputs
     g_o = softmax(a_k)                               # Activation Function
     return g_o
+
+# BackProp: Output to hidden
+def backprop_oh(w_jk, x_h, l, lr):
+    y = forward_ho(x_h, w_jk)              # Recalculate classification probs
+    t = one_hot_encoding(l)                # One-hot encode labels
+    d_E = -np.dot(np.transpose(x), delta_k(y,t))
+    return w_jk + lr * d_E  # Update weights
+
+# Delta_K for output units
+def delta_k(y, t):
+    return (t - y)
 
 #backpropogation
 def backprop(input_data, t, output_ho,output_ih, w_hidden_output, w_input_hidden):
@@ -128,7 +139,7 @@ def num_approx(w_ih, w_ho, train_im, epsilon = .00001):
 
     _, E_add_ho = forward(train_im, w_ih, w_ho + epsilon_ho)
     _, E_sub_ho = forward(train_im, w_ih, w_ho + epsilon_ho)
-    
+
     #compute approximation (make this a function)
     num_approx_ih = numerical_approx_equation(E_add_ih, E_sub_ih)
     num_approx_ho = numerical_approx_equation(E_add_ho, E_sub_ho)
@@ -165,7 +176,7 @@ w_ho = np.random.normal(mu, sigma, (65,10))
 
 # Create minibatch
 batch_i, batch_l = minibatch(tr_i, tr_l, 0, 2)
-batch_1h_l = one_hot_encoding(batch_l)
+# batch_1h_l = one_hot_encoding(batch_l)
 batch_i = add_bias_term(batch_i)
 
 #For_Prop: input to hidden
@@ -174,12 +185,35 @@ g_h = add_bias_term(g_h)       # Add bias before passing Activations to output l
 #For_Prop: hidden to output
 g_o = forward_ho(g_h, w_ho) # Activation Function of output units
 
+#Backprop: Output to hidden:
+lr = 0.0001
+w_ho = backprop_oh(w_ho, g_h, batch_l, lr) # Update w_jk weights
+#Backprop: Hidden to input:
+
+
 
 
 # Backwards prop
-w_ho, w_ih, grad_ho, grad_ih = backprop(batch_i,batch_1h_l,final_ho, final_ih, w_ho, w_ih)
+w_ho, w_ih, grad_ho, grad_ih = backprop(batch_i, batch_1h_l, final_ho, final_ih, w_ho, w_ih)
 
+#where t is the expected and y is the output (from forwards_prop)
+delta_k = batch_1h_l - final_ho
+w_ho = w_ho[1:]
+w_ih = w_ih[1:]
 
+#w_ij
+activation_ih = activation(batch_i, w_ih)
+error = sigmoid(activation_ih, derivative = True)
+c = error * np.dot(delta_k, w_ho.T)
+gradient_ih = np.dot(batch_i.T, c)
+w_ih += gradient_ih
+
+#w_jk
+z = softmax(final_ih)
+gradient_ho = np.dot(z.T, delta_k)
+w_ho += gradient_ho
+
+return w_ho, w_ih, gradient_ho, gradient_ih
 
 
 
