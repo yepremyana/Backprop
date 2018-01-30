@@ -184,20 +184,15 @@ g_o = forward_ho(g_h_b, w_ho) # Activation Function of output units
 # Backwards prop
 w_ho, w_ih, grad_ho, grad_ih = backprop(batch_i,batch_1h_l,g_o, g_h, w_ho, w_ih)
 
-
-#approx_ih, approx_ho = num_approx(w_ih, w_ho, batch_i_b, epsilon = .00001)
-
-
-
 #gradient gradient_checker
-#approx_ih, approx_ho = num_approx(w_ih, w_ho, input_bias, epsilon = .00001)
-#check_ih = gradient_checker(approx_ih, grad_ih)
-#check_ih = gradient_checker(approx_ho, grad_ho)
+approx_ih = num_approx_ih(w_ih, batch_i_b)
+approx_ho = num_approx_ih(g_h_b, w_ho)
+
+error_ih = gradient_checker(approx_ih, grad_ih)
+error_ho = gradient_checker(approx_ho, grad_ho)
+
 
 #1. add learning rate
 #2. make epochs
-#3. do gradient checker (correct? make script to check)
-#4. make into a class
-#5. fix the weights so that they are 64
-#6. make w_ij and w_jk functions
-#7. implement holdout
+#3. make into a class
+#4. implement holdout
