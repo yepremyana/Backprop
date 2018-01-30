@@ -123,12 +123,15 @@ def num_approx(w_ih, w_ho, train_im, epsilon = .00001):
     epsilon_ho = epsilon*np.ones(w_ho.shape)
 
     #we will compute E_add first
-    E_add_ih,E_add_ho = forward(train_im, w_ih + epsilon_ih, w_ho + epsilon_ho)
-    #E_sub
-    E_sub_ih, E_sub_ho = forward(train_im, w_ih - epsilon_ih, w_ho - epsilon_ho)
+    E_add_ih, _ = forward(train_im, w_ih + epsilon_ih, w_ho)
+    E_sub_ih, _ = forward(train_im, w_ih - epsilon_ih, w_ho)
+
+    _, E_add_ho = forward(train_im, w_ih, w_ho + epsilon_ho)
+    _, E_sub_ho = forward(train_im, w_ih, w_ho + epsilon_ho)
+    
     #compute approximation (make this a function)
-    num_approx_ih = numerical_approx_equation(E_add_ih - E_sub_ih)
-    num_approx_ho = numerical_approx_equation(E_add_ho - E_sub_ho)
+    num_approx_ih = numerical_approx_equation(E_add_ih, E_sub_ih)
+    num_approx_ho = numerical_approx_equation(E_add_ho, E_sub_ho)
 
     return num_approx_ih, num_approx_ho
 
