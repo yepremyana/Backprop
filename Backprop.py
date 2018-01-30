@@ -68,12 +68,12 @@ def one_hot_encoding(label_to_1hotencode):
         encoded_list.append(label_zero)
     return encoded_list
 
-def softmax(j):
-    ak = np.exp(j)
-    sum_ak = np.sum(ak, 1)
-    sum_ak = np.reshape(sum_ak, (ak.shape[0], 1))
-    sum_ak = np.repeat(sum_ak, ak.shape[1], axis=1)
-    return ak / (1.0 * sum_ak)
+def softmax(activation_k):
+    exp_ak = np.exp(activation_k)
+    sum_exp_ak = np.sum(exp_ak, 1)
+    sum_exp_ak = np.reshape(sum_exp_ak, (exp_ak.shape[0], 1))
+    sum_exp_ak = np.repeat(sum_exp_ak, ak.shape[1], axis=1)
+    return exp_ak / (1.0 * sum_exp_ak)
 
 #feedforward
 def forward_ih(input_batch, w_input_hidden):
@@ -85,7 +85,6 @@ def forward_ih(input_batch, w_input_hidden):
 def forward_ho(hidden_activations, w_hidden_output):
     #hidden to output
     a_k = activation(hidden_activations, w_hidden_output) # Weighted sum of inputs
-    print a_k.shape
     g_o = softmax(a_k)                               # Activation Function
     return g_o
 
@@ -174,29 +173,13 @@ g_o = forward_ho(g_h, w_ho) # Activation Function of output units
 
 
 
-#Understanding H to O
-a_k = activation(g_o, w_ho) # Weighted sum of inputs
-print a_k.shape
-# g_o = softmax(a_k)                               # Activation Function
-
-
-
-
-ak = np.exp(g_o)
-sum_ak = np.sum(ak, 1)
-sum_ak = np.reshape(sum_ak, (ak.shape[0], 1))
-sum_ak = np.repeat(sum_ak, ak.shape[1], axis=1)
-return ak / (1.0 * sum_ak)
-
-
-
-
-
-
-
-
 # Backwards prop
 w_ho, w_ih, grad_ho, grad_ih = backprop(batch_i,batch_1h_l,final_ho, final_ih, w_ho, w_ih)
+
+
+
+
+
 
 #gradient gradient_checker
 #approx_ih, approx_ho = num_approx(w_ih, w_ho, input_bias, epsilon = .00001)
