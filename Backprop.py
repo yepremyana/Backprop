@@ -262,8 +262,8 @@ batch_i, batch_l = rand_minibatch(tr_i, tr_l, batch_size)
 
 #3. Initialize the input weights to each unit using a distribution with 0 mean and standard deviation 1/sqrt(fan-in), where the fan-in is the number of inputs to the unit.
 mu = 0
-w_ih = np.random.normal(mu, fan_in(num_input_units), (num_input_units,num_hidden_units))
-w_ho = np.random.normal(mu, fan_in(num_hidden_units), (num_hidden_units,num_outputs))
+w_ih = np.random.normal(mu, fan_in(num_input_units+1), (num_input_units,num_hidden_units))
+w_ho = np.random.normal(mu, fan_in(num_hidden_units+1), (num_hidden_units,num_outputs))
 
 #4 Use momentum, with an alpha of 0.9.
 alpha = 0.9
