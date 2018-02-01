@@ -35,6 +35,14 @@ The tricks included are:
 4. using the hyperbolic tangent function instead of the sigmoid
 
 Figure titles will be labeled with the tricks used as well as a final image with the optmized model.
+### Figures expected from running the model
+1. Initial raw model
+2. shuffling of images
+3. momentum where alpha = 0.9
+4. using the hyperbolic tangent function instead of the sigmoid
+5. doubling hidden layers
+6. adding a second layer
+7. most optimized model
 
 Please refer to the report attached to this submission for the detailed explaination of the backprop model.
 
