@@ -93,7 +93,7 @@ def softmax(activation_k):
     return exp_ak / (1.0 * sum_exp_ak) # Normalized outputs of classifier
 
 #feedforward
-def forward_ih(input_batch, w_input_hidden, bias_h, derivative=False):
+def forward_ih(input_batch, w_input_hidden, derivative=False):
     #input to hidden
     a_j = activation(input_batch, w_input_hidden)   # Weighted sum of inputs
     z_j = sigmoid(a_j, derivative)                          # Activation Function
