@@ -14,7 +14,6 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import pdb
 import copy
-
 ```
 
 The MNIST dataset is already unploaded into this repository. 
