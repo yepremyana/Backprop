@@ -170,6 +170,13 @@ def gradient_checker(num_approx, grad_back):
     else:
         return "Check your code"
 
+def get_prediction_error(input_i, input_l, w_ih, w_ho):
+    z_j = forward_ih(input_i, w_ih)
+    z_j = add_bias_term(z_j)
+    y_k = forward_ho(z_j, w_ho)
+    pred_l = np.argmax(y_k, 1)   #Predicted labels
+    return 100.0 * (np.sum(pred_l == input_l)) / (1.0 * input_l.shape[0]) #Return ACCURACY
+
 ##############################################
 # IMPLEMENTATION:
 
@@ -194,7 +201,11 @@ tr_i, tr_l, test_i, test_l = load_data(num_train, num_test)
 tr_i, test_i = z_score_data(tr_i, test_i)
 # 3. Split training data into training and validation (hold-out set):
 hi, hl, tr_i, tr_l = hold_out(tr_i, tr_l, num_hold_out)
+
+# Add extra 1st column to input images for biases
+tr_i = add_bias_term(tr_i)
 hi = add_bias_term(hi)
+test_i = add_bias_term(test_i)
 
 # 3. Initialize weights
 w_ih = np.random.normal(mu, sigma, (num_input_units+1, num_hidden_units)) #+1 for bias
@@ -208,6 +219,7 @@ w_ho = np.random.normal(mu, sigma, (num_hidden_units+1, num_outputs))     #+1 fo
 # 4. TRAIN
 tr_acc = []
 val_acc = []
+test_acc = []
 for epochs in xrange (1,20):
 
     num_iterations = int(tr_i.shape[0] / 128.0)
@@ -220,7 +232,6 @@ for epochs in xrange (1,20):
         # Create minibatch
         #print it
         batch_i, batch_l = minibatch(tr_i, tr_l, it, batch_size)
-        batch_i = add_bias_term(batch_i)    # Add extra 1st column to input images for biases
 
         #For_Prop: Input to hidden
         z_j = forward_ih( batch_i, w_ih) # Activation Function of hidden units
@@ -235,31 +246,24 @@ for epochs in xrange (1,20):
         # 2nd: output to hidden
         w_ho = backprop_oh(w_ho, z_j, d_k, lr) # Update w_jk weights
 
-        #Calculate error on training:
-        z_j = forward_ih(batch_i, w_ih)
-        z_j = add_bias_term(z_j)
-        y_k = forward_ho(z_j, w_ho)
+        #Calculate error during training:
+        # tr_accuracy = get_prediction_error(batch_i, batch_l, w_ih, w_ho)
+        # acc.append(tr_accuracy)
 
-        pred_tr = np.argmax(y_k, 1)
-        tr_accuracy = 100.0 * (np.sum(pred_tr == batch_l)) / (1.0 * batch_l.shape[0])
-        acc.append(tr_accuracy)
+    #Accuracies:
+    #Save training, validation & testing errors:
+    # tr_acc.append(np.mean(acc)) # Average of training error during training
+    tr_acc.append(get_prediction_error(tr_i, tr_l, w_ih, w_ho))
+    val_acc.append(get_prediction_error(hi, hl, w_ih, w_ho))
+    test_acc.append(get_prediction_error(test_i, test_l, w_ih, w_ho))
 
-    #Error on validation:
-    z_j = forward_ih(hi, w_ih)
-    z_j = add_bias_term(z_j)
-    y_k = forward_ho(z_j, w_ho)
 
-    pred_tr = np.argmax(y_k, 1)
-    val_accuracy = 100.0 * (np.sum(pred_tr == hl)) / (1.0 * hl.shape[0])
-
-    #Save tr & validation errors
-    tr_acc.append(np.mean(acc))
-    val_acc.append(val_accuracy)
 
 # Plot Error
 plt.figure()
 plt.plot(tr_acc, label='Training Data, (Training Accuracy) = %.2f%s' %(np.max(tr_acc), '%'))
 plt.plot(val_acc, label='Hold-Out Data, (Validation Accuracy) = %.2f%s' %(np.max(val_acc), '%'))
+plt.plot(test_acc, label='Testing Data, (Testing Accuracy) = %.2f%s' %(np.max(test_acc), '%'))
 plt.title('Percent correct classification: SOFTMAX')
 plt.xlabel('# Epochs')
 plt.ylabel('Percent Correct Classification')
