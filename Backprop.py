@@ -59,10 +59,10 @@ def activation(x, w):
 def sigmoid(x, derivative = False):
     y = 1 / (1 + np.exp(-1 * x))
     if (derivative == True):
-        print 'derivative'
+        # print 'derivative'
         return y*(1-y)
     else:
-        print 'Normal Sigmoid'
+        # print 'Normal Sigmoid'
         return y
 
 def hyperbolic_tangent(x, derivative = False):
@@ -95,43 +95,40 @@ def softmax(activation_k):
 #feedforward
 def forward_ih(input_batch, w_input_hidden, bias_h, derivative=False):
     #input to hidden
-    a_j = activation(input_batch, w_input_hidden) + bias_h  # Weighted sum of inputs + b
-    z_i = sigmoid(a_j, derivative)                          # Activation Function
-    return z_i
+    a_j = activation(input_batch, w_input_hidden)   # Weighted sum of inputs
+    z_j = sigmoid(a_j, derivative)                          # Activation Function
+    return z_j
 
-def forward_ho(hidden_activations, w_hidden_output, bias_o):
+def forward_ho(hidden_activations, w_hidden_output):#, bias_o):
     #hidden to output
-    a_k = activation(hidden_activations, w_hidden_output) + bias_o  # Weighted sum of inputs
+    a_k = activation(hidden_activations, w_hidden_output) #+ bias_o  # Weighted sum of inputs
     y_k = softmax(a_k)                                              # Activation Function
     return y_k
 
 # BackProp: Output to hidden
-def backprop_oh(w_jk, bias_o, x_h, l, lr):
-    y = forward_ho(x_h, w_jk, bias_o)              # Recalculate classification probs
-    t = one_hot_encoding(l)                # One-hot encode labels
-    d_k = -delta_k(y,t)
-    d_Ejk = np.dot(np.transpose(x_h), d_k)
-
+def backprop_oh(w_jk, z_j, d_k, lr):
+    d_Ejk = np.dot(np.transpose(z_j), d_k)
     w_jk = w_jk + lr * d_Ejk                # Update weights
-    bias_o = bias_o + lr * d_k              # Update bias
-    return w_jk, bias_o, d_k
+    return w_jk
+
+def get_dk_gradient(w_jk, z_j, l):
+        y = forward_ho(z_j, w_jk)              # Recalculate classification probs
+        t = one_hot_encoding(l)                # One-hot encode labels
+        return delta_k(y,t)
 
 # Delta_K for output units
 def delta_k(y, t):
     return (t - y)
 
 # BackProp: Hidden to Input
-def backprop_hi(w_ih, w_ho, bias_h, x, d_k, lr):
-    g_h_der = forward_ih(batch_i, w_ih, bias_h, derivative=True)             # g'(a_j)
-    d_j = - np.transpose(g_h_der) * (np.dot(w_ho, np.transpose(d_k))) # d_j =  g'(a_j) * sum(wjk * d_k)
+def backprop_hi(w_ih, w_ho, x, d_k, lr):
+    g_h_der = forward_ih(batch_i, w_ih, derivative=True)             # g'(a_j)
+    # d_j =  g'(a_j) * sum(wjk * d_k) !!!!! THIS IS THE CRITICAL STEP, we do not take the row of Wjk corresponding to their biases
+    d_j = np.transpose(g_h_der) * (np.dot(w_ho[1:,:], np.transpose(d_k)))
     d_Eij = np.transpose( np.dot(d_j, x) )                         # -dEij = d_j * x_i
-    d_Ebias = np.dot(d_j, np.transpose(np.ones(d_j.shape[1])))
-
-    print d_Ebias.shape
 
     w_ih = w_ih + lr * d_Eij
-    bias_h = bias_h + lr * d_Ebias
-    return w_ih, bias_h
+    return w_ih
 
 def hold_out(train_im, train_lab, percent):
     num_hold_out = int(np.round(1/float(percent) * len(train_im)))
@@ -175,7 +172,7 @@ def gradient_checker(num_approx, grad_back):
 # PARAMETERS:
 num_train = 60000    # Load num_train images
 num_test = 10000      # Load num_test images
-lr = 0.00000000001   # Learning rate
+lr = 0.01   # Learning rate
 mu, sigma = 0, 0.1   # Parameters of Gaussian to initialize weights
 
 batch_size = 128
@@ -184,88 +181,58 @@ num_input_units = 784   # Units in the imput layer
 num_hidden_units = 64   # Units in the hidden layer
 num_outputs = 10        # Units in the output layer
 
-num_iterations = 100
-
 # 1. Load Data
 tr_i, tr_l, test_i, test_l = load_data(num_train, num_test)
-
 # 2. Z-score data
 tr_i, test_i = z_score_data(tr_i, test_i)
 
-# mnist_printer(tr_i[0])
-
 # 3. Initialize weights
-w_ih = np.random.normal(mu, sigma, (num_input_units,num_hidden_units))
-w_ho = np.random.normal(mu, sigma, (num_hidden_units,num_outputs))
-b_h = np.random.normal(mu, sigma, num_hidden_units)
-b_o = np.random.normal(mu, sigma, num_outputs)
-
+w_ih = np.random.normal(mu, sigma, (num_input_units+1, num_hidden_units)) #+1 for bias
+w_ho = np.random.normal(mu, sigma, (num_hidden_units+1, num_outputs))     #+1 for bias
 
 # 4. TRAIN
-etr = []
-for it in xrange(0,num_iterations):
-    print it
-# Create minibatch
-    batch_i, batch_l = minibatch(tr_i, tr_l, it, batch_size)
-    # batch_i = add_bias_term(batch_i)
+NN_acc = []
+for epochs in xrange (1,20):
 
-    #For_Prop: input to hidden
-    z_i = forward_ih( batch_i, w_ih, b_h) # Activation Function of hidden units
-    #For_Prop: hidden to output
-    y_k = forward_ho(z_i, w_ho, b_o) # Activation Function of output units
+    num_iterations = int(tr_i.shape[0] / 128.0)
+    acc = []
+    for it in xrange(0,num_iterations):
+        # Create minibatch
+        batch_i, batch_l = minibatch(tr_i, tr_l, it, batch_size)
+        batch_i = add_bias_term(batch_i)    # Add extra 1st column to input images for biases
 
-    #Backprop: Output to hidden:
-    lr = 0.0001
-    w_ho, b_o, d_k = backprop_oh(w_ho, b_o, z_i, batch_l, lr) # Update w_jk weights + b_o
-    #Backprop: Hidden to input:
-    w_ih, b_h = backprop_hi(w_ih, w_ho, b_h, batch_i, d_k, lr) # Update w_ij weights + b_h
+        #For_Prop: Input to hidden
+        z_j = forward_ih( batch_i, w_ih) # Activation Function of hidden units
+        z_j = add_bias_term(z_j) # Add extra 1st column to hidden activations for biases
+        #For_Prop: hidden to output
+        y_k = forward_ho(z_j, w_ho) # Activation Function of output units
 
+        # BACKPROP:
+        d_k = get_dk_gradient(w_ho, z_j, batch_l)
+        # 1st: hidden to input (Bc we need old w_jk)
+        w_ih = backprop_hi(w_ih, w_ho, batch_i, d_k, lr) # Update w_ij weights
+        # 2nd: output to hidden
+        w_ho = backprop_oh(w_ho, z_j, d_k, lr) # Update w_jk weights
 
-    #Calculate error
-    z_i = forward_ih(batch_i, w_ih, b_h)
-    y_k = forward_ho(z_i, w_ho, b_o)
+        #Calculate error
+        z_j = forward_ih(batch_i, w_ih)
+        z_j = add_bias_term(z_j)
+        y_k = forward_ho(z_j, w_ho)
 
-    pred_tr = np.argmax(y_k, 1)
-    error_tr = 100.0 * (1 - 1.0*(np.sum(pred_tr != tr_l)) / (1.0 * tr_i.shape[0]))
-    etr.append(error_tr)
-
+        pred_tr = np.argmax(y_k, 1)
+        class_accuracy = 100.0 * (np.sum(pred_tr == batch_l)) / (1.0 * batch_l.shape[0])
+        acc.append(class_accuracy)
+    NN_acc.append(np.mean(acc))
+    print np.mean(acc)
 
 # Plot Error
 plt.figure()
-plt.plot(etr, label='Training Data, (Classification Accuracy) = %.2f%s' %(np.max(etr), '%'))
-# plt.plot(eh, label='Hold-out Data, (Classification Accuracy) = %.2f%s' %(np.max(eh), '%'))
-# plt.plot(ete, label='Testing Data, (Classification Accuracy) = %.2f%s' %(np.max(ete), '%'))
+plt.plot(NN_acc, label='Training Data, (Classification Accuracy) = %.2f%s' %(np.max(NN_acc), '%'))
 plt.title('Percent correct classification: SOFTMAX')
 plt.xlabel('# Epochs')
 plt.ylabel('Percent Correct Classification')
 plt.legend(loc='lower right')
 plt.show(block=False)
-
-
-#Tips and Tricks
-#1. Random Sampling
-batch_i, batch_l = rand_minibatch(tr_i, tr_l, batch_size)
-
-#2. sigmoid in Section 4.4
-#in forward_ih change sigmoid to hyperbolic_tangent(a_j)
-
-#3. Initialize the input weights to each unit using a distribution with 0 mean and standard deviation 1/sqrt(fan-in), where the fan-in is the number of inputs to the unit.
-mu = 0
-w_ih = np.random.normal(mu, fan_in(num_input_units), (num_input_units,num_hidden_units))
-w_ho = np.random.normal(mu, fan_in(num_hidden_units), (num_hidden_units,num_outputs))
-
-#4 Use momentum, with an alpha of 0.9.
-#create an array to store prev delta values before for loop
-prev_delta_jk = []
-alpha = 0.9
-gradient_delta = lr * d_Ejk
-w_ho += gradient_delta + (alpha * prev_delta_jk[-1]))
-prev_delta_jk.append(gradient_delta)
-
-prev_delta_ij = []
-gradient_delta = lr * d_Eij
-w_ih += gradient_delta + (alpha * prev_delta_ij[-1]))
-prev_delta_ij.append(gradient_delta)
 
 
 
