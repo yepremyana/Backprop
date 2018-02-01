@@ -130,13 +130,14 @@ def backprop_hi(w_ih, w_ho, x, d_k, lr):
     w_ih = w_ih + lr * d_Eij
     return w_ih
 
-def hold_out(train_im, train_lab, percent):
-    num_hold_out = int(np.round(1/float(percent) * len(train_im)))
+#Extract a hold-out set of x% from the training data:
+def hold_out(train_im, train_lab, num_hold_out):
     hold_out_im = train_im[-num_hold_out:]
     hold_out_labels = train_lab[-num_hold_out:]
     train_im = train_im[:-num_hold_out]
     train_lab = train_lab[:-num_hold_out]
-    return hold_out_im, hold_out_labels, train_im, train_lab
+    return np.array(hold_out_im), np.array(hold_out_labels), \
+           np.array(train_im), np.array(train_lab)
 
 def num_approx_ih(w_ih, train_im, epsilon = .00001):
     epsilon_v = epsilon*np.ones(w_ih.shape)
@@ -172,6 +173,8 @@ def gradient_checker(num_approx, grad_back):
 # PARAMETERS:
 num_train = 60000    # Load num_train images
 num_test = 10000      # Load num_test images
+num_hold_out = 10000  # How many images from training used for validation
+
 lr = 0.01   # Learning rate
 mu, sigma = 0, 0.1   # Parameters of Gaussian to initialize weights
 
@@ -185,13 +188,17 @@ num_outputs = 10        # Units in the output layer
 tr_i, tr_l, test_i, test_l = load_data(num_train, num_test)
 # 2. Z-score data
 tr_i, test_i = z_score_data(tr_i, test_i)
+# 3. Split training data into training and validation (hold-out set):
+hi, hl, tr_i, tr_l = hold_out(tr_i, tr_l, num_hold_out)
+hi = add_bias_term(hi)
 
 # 3. Initialize weights
 w_ih = np.random.normal(mu, sigma, (num_input_units+1, num_hidden_units)) #+1 for bias
 w_ho = np.random.normal(mu, sigma, (num_hidden_units+1, num_outputs))     #+1 for bias
 
 # 4. TRAIN
-NN_acc = []
+tr_acc = []
+val_acc = []
 for epochs in xrange (1,20):
 
     num_iterations = int(tr_i.shape[0] / 128.0)
@@ -214,20 +221,31 @@ for epochs in xrange (1,20):
         # 2nd: output to hidden
         w_ho = backprop_oh(w_ho, z_j, d_k, lr) # Update w_jk weights
 
-        #Calculate error
+        #Calculate error on training:
         z_j = forward_ih(batch_i, w_ih)
         z_j = add_bias_term(z_j)
         y_k = forward_ho(z_j, w_ho)
 
         pred_tr = np.argmax(y_k, 1)
-        class_accuracy = 100.0 * (np.sum(pred_tr == batch_l)) / (1.0 * batch_l.shape[0])
-        acc.append(class_accuracy)
-    NN_acc.append(np.mean(acc))
-    print np.mean(acc)
+        tr_accuracy = 100.0 * (np.sum(pred_tr == batch_l)) / (1.0 * batch_l.shape[0])
+        acc.append(tr_accuracy)
+
+    #Error on validation:
+    z_j = forward_ih(hi, w_ih)
+    z_j = add_bias_term(z_j)
+    y_k = forward_ho(z_j, w_ho)
+
+    pred_tr = np.argmax(y_k, 1)
+    val_accuracy = 100.0 * (np.sum(pred_tr == hl)) / (1.0 * hl.shape[0])
+
+    #Save tr & validation errors
+    tr_acc.append(np.mean(acc))
+    val_acc.append(val_accuracy)
 
 # Plot Error
 plt.figure()
-plt.plot(NN_acc, label='Training Data, (Classification Accuracy) = %.2f%s' %(np.max(NN_acc), '%'))
+plt.plot(tr_acc, label='Training Data, (Training Accuracy) = %.2f%s' %(np.max(tr_acc), '%'))
+plt.plot(val_acc, label='Hold-Out Data, (Validation Accuracy) = %.2f%s' %(np.max(val_acc), '%'))
 plt.title('Percent correct classification: SOFTMAX')
 plt.xlabel('# Epochs')
 plt.ylabel('Percent Correct Classification')
