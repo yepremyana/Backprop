@@ -16,7 +16,7 @@ import pdb
 import copy
 ```
 
-The MNIST dataset is already unploaded into this repository. 
+The MNIST dataset is already uploaded into this repository. 
 
 ## Running the tests
 
