@@ -111,8 +111,8 @@ def forward_ho(hidden_activations, w_hidden_output):#, bias_o):
 # BackProp: Output to hidden
 def backprop_oh(w_jk, z_j, d_k, lr):
     d_Ejk = np.dot(np.transpose(z_j), d_k)
-    w_jk = w_jk + lr * d_Ejk                # Update weights
-    return w_jk
+    w_jk_update = lr * d_Ejk                # Update weights
+    return w_jk_update
 
 def get_dk_gradient(w_jk, z_j, l):
         y = forward_ho(z_j, w_jk)              # Recalculate classification probs
@@ -130,8 +130,8 @@ def backprop_hi(w_ih, w_ho, x, d_k, lr):
     d_j = np.transpose(g_h_der) * (np.dot(w_ho[1:,:], np.transpose(d_k)))
     d_Eij = np.transpose( np.dot(d_j, x) )                         # -dEij = d_j * x_i
 
-    w_ih = w_ih + lr * d_Eij
-    return w_ih
+    w_ih_update = lr * d_Eij
+    return w_ih_update
 
 #Extract a hold-out set of x% from the training data:
 def hold_out(train_im, train_lab, num_hold_out):
@@ -242,10 +242,11 @@ for epochs in xrange (1,20):
         # BACKPROP:
         d_k = get_dk_gradient(w_ho, z_j, batch_l)
         # 1st: hidden to input (Bc we need old w_jk)
-        w_ih = backprop_hi(w_ih, w_ho, batch_i, d_k, lr) # Update w_ij weights
+        w_ih_update = backprop_hi(w_ih, w_ho, batch_i, d_k, lr) # Update w_ij weights
+        w_ih += w_ih_update
         # 2nd: output to hidden
-        w_ho = backprop_oh(w_ho, z_j, d_k, lr) # Update w_jk weights
-
+        w_ho_update = backprop_oh(w_ho, z_j, d_k, lr) # Update w_jk weights
+        w_ho += w_ho_update
         #Calculate error during training:
         # tr_accuracy = get_prediction_error(batch_i, batch_l, w_ih, w_ho)
         # acc.append(tr_accuracy)
