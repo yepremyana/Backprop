@@ -280,12 +280,16 @@ w_ih = np.random.normal(mu, fan_in(num_input_units+1), (num_input_units+1,num_hi
 w_ho = np.random.normal(mu, fan_in(num_hidden_units+1), (num_hidden_units+1,num_outputs))
 
 #4 Use momentum, with an alpha of 0.9.
+
+prev_delta_jk = np.zeros(w_ho.shape)
+prev_delta_ij = np.zeros(w_ih.shape)
+
 alpha = 0.9
 w_jk_update = lr * d_Ejk
-w_ho += w_jk_update + (alpha * prev_delta_jk))
+w_ho += w_jk_update + (alpha * prev_delta_jk)
 
 w_ij_update = lr * d_Eij
-w_ih += w_ij_update + (alpha * prev_delta_ij))
+w_ih += w_ij_update + (alpha * prev_delta_ij)
 
 #store gradients
 prev_delta_jk,prev_delta_ij = w_jk_update, w_ij_update
