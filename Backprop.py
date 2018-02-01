@@ -43,7 +43,7 @@ def fan_in(inputs):
 
 #minibatch of 128
 def minibatch(train_set, train_labs, n, batch_size):
-    batch = train_set[n*batch_size : (n*batch_size + batch_size), :]
+    batch = train_set[n*batch_size : (n*batch_size + batch_size),:]
     labels = train_labs[n*batch_size : (n*batch_size + batch_size)]
     return batch,labels
 
@@ -51,12 +51,12 @@ def rand_minibatch(train_set, train_labs, batch_size):
     index_rand = random.sample(xrange(len(train_set)), batch_size)
     batch = [train_set[n] for n in index_rand]
     labels = [train_labs[n] for n in index_rand]
-    return batch,labels
+    return np.array(batch),np.array(labels)
 
 def activation(x, w):
     return np.dot(x, w)
 
-def sigmoid(x, derivative = False):
+def sigmoid(x, derivative=False):
     y = 1 / (1 + np.exp(-1 * x))
     if (derivative == True):
         # print 'derivative'
@@ -65,16 +65,16 @@ def sigmoid(x, derivative = False):
         # print 'Normal Sigmoid'
         return y
 
-def hyperbolic_tangent(x, derivative = False):
+def hyperbolic_tangent(x, derivative=False):
     if (derivative == True):
-        return 1.14393/(np.cosh((2/3) * x) ** 2)
+        return 1.7159 * 2.0 * (1.0 - (np.tanh(2.0*x/3.0)**2))/3.0
     else:
-        return 1.7159 * np.tanh((2/3) * x)
+        return 1.7159 * np.tanh((2.0*x/3.0))
 
 #Add a 1 in front of every input vector that accounts for the bias weight
 def add_bias_term(x_array):
     a = np.array(x_array)
-    x_bias = np.insert(a, 0, 1, axis = 1)
+    x_bias = np.insert(a, 0, 1, axis=1)
     return np.array([np.append(1,x) for x in x_array])
 
 def one_hot_encoding(label_to_1hotencode):
@@ -96,6 +96,9 @@ def softmax(activation_k):
 def forward_ih(input_batch, w_input_hidden, derivative=False):
     #input to hidden
     a_j = activation(input_batch, w_input_hidden)   # Weighted sum of inputs
+    #part 4b
+    #z_j = hyperbolic_tangent(a_j, derivative)
+
     z_j = sigmoid(a_j, derivative)                          # Activation Function
     return z_j
 
@@ -175,7 +178,8 @@ num_train = 60000    # Load num_train images
 num_test = 10000      # Load num_test images
 num_hold_out = 10000  # How many images from training used for validation
 
-lr = 0.01   # Learning rate
+lr = 0.01
+#lr = 0.0001   # Learning rate
 mu, sigma = 0, 0.1   # Parameters of Gaussian to initialize weights
 
 batch_size = 128
@@ -196,6 +200,11 @@ hi = add_bias_term(hi)
 w_ih = np.random.normal(mu, sigma, (num_input_units+1, num_hidden_units)) #+1 for bias
 w_ho = np.random.normal(mu, sigma, (num_hidden_units+1, num_outputs))     #+1 for bias
 
+#4c
+#mu = 0
+#w_ih = np.random.normal(mu, fan_in(num_input_units+1), (num_input_units+1,num_hidden_units))
+#w_ho = np.random.normal(mu, fan_in(num_hidden_units+1), (num_hidden_units+1,num_outputs))
+
 # 4. TRAIN
 tr_acc = []
 val_acc = []
@@ -203,8 +212,13 @@ for epochs in xrange (1,20):
 
     num_iterations = int(tr_i.shape[0] / 128.0)
     acc = []
+    #4a
+    #tr_i, tr_l = rand_minibatch(tr_i, tr_l,50000)
+
+    #print epochs
     for it in xrange(0,num_iterations):
         # Create minibatch
+        #print it
         batch_i, batch_l = minibatch(tr_i, tr_l, it, batch_size)
         batch_i = add_bias_term(batch_i)    # Add extra 1st column to input images for biases
 
@@ -255,22 +269,22 @@ plt.show(block=False)
 
 #Tips and Tricks
 #1. Random Sampling
-batch_i, batch_l = rand_minibatch(tr_i, tr_l, batch_size)
+batch_i, batch_l = rand_minibatch(tr_i, tr_l, 50000)
 
 #2. sigmoid in Section 4.4
 #in forward_ih change sigmoid to hyperbolic_tangent(a_j)
 
 #3. Initialize the input weights to each unit using a distribution with 0 mean and standard deviation 1/sqrt(fan-in), where the fan-in is the number of inputs to the unit.
 mu = 0
-w_ih = np.random.normal(mu, fan_in(num_input_units+1), (num_input_units,num_hidden_units))
-w_ho = np.random.normal(mu, fan_in(num_hidden_units+1), (num_hidden_units,num_outputs))
+w_ih = np.random.normal(mu, fan_in(num_input_units+1), (num_input_units+1,num_hidden_units))
+w_ho = np.random.normal(mu, fan_in(num_hidden_units+1), (num_hidden_units+1,num_outputs))
 
 #4 Use momentum, with an alpha of 0.9.
 alpha = 0.9
-w_jk_update = -lr * d_Ejk
+w_jk_update = lr * d_Ejk
 w_ho += w_jk_update + (alpha * prev_delta_jk))
 
-w_ij_update = -lr * d_Eij
+w_ij_update = lr * d_Eij
 w_ih += w_ij_update + (alpha * prev_delta_ij))
 
 #store gradients
@@ -287,6 +301,4 @@ approx_ho = num_approx_ho(z_i_b, w_ho)
 error_ih = gradient_checker(approx_ih, grad_ih)
 error_ho = gradient_checker(approx_ho, grad_ho)
 
-
-#3. make into a class
-#4. implement holdout
+#My understand is that a three layer nn with 784 input dimension, 64 hidden neurons, 10 classes output has in all (784+1)*64+(64+1)*10=50890 parameters.
