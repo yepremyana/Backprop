@@ -9,45 +9,61 @@ import copy
 
 
 #<editor-fold desc="Print Weights">
-#Prints Image. Input: 1D array 784
 def mnist_printer(mnist_array, save=False):
+    '''
+    Prints Image. Input: 1D array 784
+    '''
     pixmap = weights_to_2d(mnist_array).astype(float)
     # print pixmap.shape #28x28
     plt.imshow(pixmap, cmap=cm.gray, interpolation='nearest')
     plt.show(block=False)
 
-# takes 1D array turns it into 2D arrays. 784 weights to 28x28
 def weights_to_2d(weights):
+    '''
+    takes 1D array turns it into 2D arrays. 784 weights to 28x28
+    '''
     dim1 = int(np.sqrt(len(weights)))
     dim2 = int(len(weights) / dim1)
     weights = weights[:dim1*dim2] # This is for adding the occlusions.
     return copy.deepcopy(np.reshape(weights, (dim1, dim2)))
 #</editor-fold>
 
-# Will load MNIST data and return the first and last specified number of training & testing images respectively
 def load_data(num_train, num_test, directory='mnist'):
+    '''
+    Will load MNIST data and return the first and last specified number of training & testing images respectively
+    '''
     mndata = MNIST(directory)
     train_dat, train_lab = mndata.load_training()
     test_dat, test_lab = mndata.load_testing()
     return np.array(train_dat[:num_train]), np.array(train_lab[:num_train]), \
            np.array(test_dat[-num_test:]), np.array(test_lab[-num_test:])
 
-# Images /127.5 - 1 so that they are in range [-1,1]
 def z_score_data(train_dat, test_dat):
+    '''
+    Images /127.5 - 1 so that they are in range [-1,1]
+    '''
     train_dat = train_dat/127.5 -1
     test_dat = test_dat/127.5 - 1
     return train_dat, test_dat
 
 def fan_in(inputs):
+    '''
+    Calculates sigma for initializing the weights of the network
+    '''
     return 1/(inputs**(1/2.0))
 
-#minibatch of 128
 def minibatch(train_set, train_labs, n, batch_size):
+    '''
+    Creates minibatches from a larger dataset while retaining label values
+    '''
     batch = train_set[n*batch_size : (n*batch_size + batch_size),:]
     labels = train_labs[n*batch_size : (n*batch_size + batch_size)]
     return batch,labels
 
 def rand_minibatch(train_set, train_labs, batch_size):
+    '''
+    randomizes order of samples
+    '''
     index_rand = random.sample(xrange(len(train_set)), batch_size)
     batch = [train_set[n] for n in index_rand]
     labels = [train_labs[n] for n in index_rand]
@@ -71,16 +87,21 @@ def hyperbolic_tangent(x, derivative=False):
     else:
         return 1.7159 * np.tanh((2.0*x/3.0))
 
-#Add a 1 in front of every input vector that accounts for the bias weight
 def add_bias_term(x_array):
+    '''
+    Add a 1 in front of every input vector that accounts for the bias weight
+    '''
     a = np.array(x_array)
     x_bias = np.insert(a, 0, 1, axis=1)
     return np.array([np.append(1,x) for x in x_array])
 
 def one_hot_encoding(label_to_1hotencode):
+    '''
+    Makes labels into vectors
+    '''
     encoded_list = list()
     for label in label_to_1hotencode:
-        label_zero = [0 for _ in xrange(10)]
+        label_zero = [0 for i in xrange(10)]
         label_zero[label] = 1
         encoded_list.append(label_zero)
     return np.array(encoded_list)
@@ -92,8 +113,11 @@ def softmax(activation_k):
     sum_exp_ak = np.repeat(sum_exp_ak, exp_ak.shape[1], axis=1)
     return exp_ak / (1.0 * sum_exp_ak) # Normalized outputs of classifier
 
-#feedforward
 def forward_ih(input_batch, w_input_hidden, derivative=False):
+    '''
+    The forward propagation between the input layer and the hidden layer with
+    either a sigmoid or hyperbolic tangent sigmoid.
+    '''
     #input to hidden
     a_j = activation(input_batch, w_input_hidden)   # Weighted sum of inputs
     #part 4b
@@ -102,29 +126,41 @@ def forward_ih(input_batch, w_input_hidden, derivative=False):
     #z_j = sigmoid(a_j, derivative)                          # Activation Function
     return z_j
 
-def forward_ho(hidden_activations, w_hidden_output):#, bias_o):
+def forward_ho(hidden_activations, w_hidden_output):
+    '''
+    The forward propagation between the hidden layer and the output layer with
+    softmax applied to the output layer.
+    '''
     #hidden to output
     a_k = activation(hidden_activations, w_hidden_output) #+ bias_o  # Weighted sum of inputs
     y_k = softmax(a_k)                                              # Activation Function
     return y_k
 
-# BackProp: Output to hidden
 def backprop_oh(w_jk, z_j, d_k, lr):
+    '''
+    Backpropagation between the output layer and the hidden layer. Function
+    returns the update for w_jk.
+    '''
     d_Ejk = np.dot(np.transpose(z_j), d_k)
     w_jk_update = lr * d_Ejk                # Update weights
     return w_jk_update
 
 def get_dk_gradient(w_jk, z_j, l):
-        y = forward_ho(z_j, w_jk)              # Recalculate classification probs
-        t = one_hot_encoding(l)                # One-hot encode labels
-        return delta_k(y,t)
+    y = forward_ho(z_j, w_jk)              # Recalculate classification probs
+    t = one_hot_encoding(l)                # One-hot encode labels
+    return delta_k(y,t)
 
-# Delta_K for output units
 def delta_k(y, t):
+    '''
+    Delta_K for output units
+    '''
     return (t - y)
 
-# BackProp: Hidden to Input
 def backprop_hi(w_ih, w_ho, x, d_k, lr):
+    '''
+    Backpropagation between the hidden layer and the input layer. Function
+    returns the update for w_ij.
+    '''
     g_h_der = forward_ih(batch_i, w_ih, derivative=True)             # g'(a_j)
     d_j = np.transpose(g_h_der) * (np.dot(w_ho[1:,:], np.transpose(d_k)))
     d_Eij = np.transpose( np.dot(d_j, x) )                         # -dEij = d_j * x_i
@@ -132,8 +168,10 @@ def backprop_hi(w_ih, w_ho, x, d_k, lr):
     w_ih_update = lr * d_Eij
     return w_ih_update
 
-#Extract a hold-out set of x% from the training data:
 def hold_out(train_im, train_lab, num_hold_out):
+    '''
+    Extract a hold-out set of percentage from the training data. Used to stop training before overfitting
+    '''
     hold_out_im = train_im[-num_hold_out:]
     hold_out_labels = train_lab[-num_hold_out:]
     train_im = train_im[:-num_hold_out]
@@ -142,7 +180,10 @@ def hold_out(train_im, train_lab, num_hold_out):
            np.array(train_im), np.array(train_lab)
 
 def num_approx_ih(w_ih, w_ho, train_im, label, it,ip, epsilon = .01):
-
+    '''
+    Calculation of the numerical approximation and the backpropagation of the
+    gradient w_ij
+    '''
     z_j = forward_ih(train_im, w_ih)
     z_j = add_bias_term(z_j)
     delta_k = get_dk_gradient(w_ho, z_j, label)
@@ -158,7 +199,10 @@ def num_approx_ih(w_ih, w_ho, train_im, label, it,ip, epsilon = .01):
     return w_ih_update, num
 
 def num_approx_ho(w_ih, w_ho, train_im, label, it, ip, epsilon = .01):
-
+    '''
+    Calculation of the numerical approximation and the backpropagation of the
+    gradient w_jk
+    '''
     z_j = forward_ih(train_im, w_ih)
     z_j = add_bias_term(z_j)
     delta_k = get_dk_gradient(w_ho, z_j, label)
@@ -177,6 +221,9 @@ def numerical_approx_equation(E_plus, E_minus, epsilon = .01):
     return (E_plus - E_minus) / (2.0 * (epsilon))
 
 def grad_checker(num_approx, grad_back):
+    '''
+    Checks that the difference between the num and backprop calc is small.
+    '''
     error = abs(num_approx - grad_back)
     if error < .0001:
         return "It works"
@@ -191,6 +238,9 @@ def get_prediction_error(input_i, input_l, w_ih, w_ho):
     return 100.0 * (np.sum(pred_l == input_l)) / (1.0 * input_l.shape[0]) #Return ACCURACY
 
 def loss_funct(input_i, input_l, w_ih, w_ho):
+    '''
+    Calculates the cross entropy, the loss function.
+    '''
     z_j = forward_ih(input_i, w_ih)
     z_j = add_bias_term(z_j)
     y = forward_ho(z_j, w_ho)
@@ -199,6 +249,9 @@ def loss_funct(input_i, input_l, w_ih, w_ho):
     return (-1.0 / (input_i.shape[0] * w_ho.shape[1])) * (np.sum(t * np.log(y)))
 
 def early_stopping(v_acc):
+    '''
+    Early stopping of training is implemented if the error goes up over 5 epochs
+    '''
     if (all(v_acc[-1] < i for i in [v_acc[-2], v_acc[-3], v_acc[-4], v_acc[-5], v_acc[-6]])): return True
 
 ##############################################
@@ -211,7 +264,7 @@ num_hold_out = 10000  # How many images from training used for validation
 lr = 0.0003  #Best: 0.01
 mu, sigma = 0, 0.1   # Parameters of Gaussian to initialize weights
 alpha = 0.9
-batch_size = 2
+batch_size = 64
 
 num_input_units = 784   # Units in the imput layer
 num_hidden_units = 128   # Units in the hidden layer
@@ -238,7 +291,7 @@ test_i = add_bias_term(test_i)
 #w_ih = np.random.normal(mu, sigma, (num_input_units+1, num_hidden_units)) #+1 for bias
 #w_ho = np.random.normal(mu, sigma, (num_hidden_units+1, num_outputs))     #+1 for bias
 
-#4c
+#4c Fan-in
 mu = 0
 w_ih = np.random.normal(mu, fan_in(num_input_units+1), (num_input_units+1,num_hidden_units))
 w_ho = np.random.normal(mu, fan_in(num_hidden_units+1), (num_hidden_units+1,num_outputs))
@@ -256,7 +309,7 @@ for epoch in xrange(40):
 
     num_iterations = int(tr_i.shape[0] / 128.0)
     acc = []
-    #4a
+    #4a Shuffling the data
     tr_i, tr_l = rand_minibatch(tr_i, tr_l,50000)
 
     prev_update_jk = np.zeros(w_ho.shape)
@@ -278,14 +331,14 @@ for epoch in xrange(40):
         w_ih_update = backprop_hi(w_ih, w_ho, batch_i, d_k, lr) # Update w_ij weights
         #w_ih += w_ih_update
 
-        #4d
+        #4d momentum
         w_ih += w_ih_update + (alpha * prev_update_ij)
 
         # 2nd: output to hidden
         w_ho_update = backprop_oh(w_ho, z_j, d_k, lr) # Update w_jk weights
         #w_ho += w_ho_update
 
-        #4d
+        #4d momentum
         w_ho += w_ho_update + (alpha * prev_update_jk)
         prev_update_jk,prev_update_ij = w_ho_update, w_ih_update
 
