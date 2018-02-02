@@ -211,18 +211,19 @@ def loss_funct(input_i, input_l, w_ih, w_ho):
     y = forward_ho(z_j, w_ho)
     t = one_hot_encoding(input_l)
     #Normalize w.r.t # training examples and #categories
-    return (-1.0 / x.shape[0] * w_ho.shape[1]) * (np.sum(t * np.log(y)))
+    return (-1.0 / (input_i.shape[0] * w_ho.shape[1])) * (np.sum(t * np.log(y)))
+
+def early_stopping(v_acc):
+    if (all(v_acc[-1] < i for i in [v_acc[-2], v_acc[-3], v_acc[-4], v_acc[-5], v_acc[-6]])): return True
 
 ##############################################
-# IMPLEMENTATION:
 
 # PARAMETERS:
 num_train = 60000    # Load num_train images
 num_test = 10000      # Load num_test images
 num_hold_out = 10000  # How many images from training used for validation
 
-lr = 0.01
-#lr = 0.0001   # Learning rate
+lr = 0.01  #Best: 0.01
 mu, sigma = 0, 0.1   # Parameters of Gaussian to initialize weights
 #alpha = 0.9
 batch_size = 128
@@ -230,6 +231,11 @@ batch_size = 128
 num_input_units = 784   # Units in the imput layer
 num_hidden_units = 64   # Units in the hidden layer
 num_outputs = 10        # Units in the output layer
+
+earlyStop = False       # Stop if validation error < 5 previous epochs
+
+##############################################
+# IMPLEMENTATION:
 
 # 1. Load Data
 tr_i, tr_l, test_i, test_l = load_data(num_train, num_test)
@@ -260,7 +266,8 @@ Ltr = []
 Lh = []
 Lte = []
 
-for epochs in xrange (1,20):
+for epoch in xrange(40):
+    print epoch
 
     num_iterations = int(tr_i.shape[0] / 128.0)
     acc = []
@@ -270,7 +277,6 @@ for epochs in xrange (1,20):
     #prev_update_jk = np.zeros(w_ho.shape)
     #prev_update_ij = np.zeros(w_ih.shape)
 
-    #print epochs
     for it in xrange(0,num_iterations):
         # Create minibatch
         #print it
@@ -314,6 +320,12 @@ for epochs in xrange (1,20):
     tr_acc.append(get_prediction_error(tr_i, tr_l, w_ih, w_ho))
     val_acc.append(get_prediction_error(hi, hl, w_ih, w_ho))
     test_acc.append(get_prediction_error(test_i, test_l, w_ih, w_ho))
+
+    # Early stopping:
+    if (earlyStop == True and epoch>7):
+        if (early_stopping(val_acc) == True):
+            print 'Early stopped'
+            break
 
 
 
