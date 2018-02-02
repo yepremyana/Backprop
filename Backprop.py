@@ -211,7 +211,7 @@ def loss_funct(input_i, input_l, w_ih, w_ho):
     y = forward_ho(z_j, w_ho)
     t = one_hot_encoding(input_l)
     #Normalize w.r.t # training examples and #categories
-    return (-1.0 / x.shape[0] * w_ho.shape[1]) * (np.sum(t * np.log(y)))
+    return (-1.0 / (input_i.shape[0] * w_ho.shape[1])) * (np.sum(t * np.log(y)))
 
 ##############################################
 # IMPLEMENTATION:
@@ -377,5 +377,3 @@ approx_ho = num_approx_ho(z_i_b, w_ho)
 
 error_ih = gradient_checker(approx_ih, grad_ih)
 error_ho = gradient_checker(approx_ho, grad_ho)
-
-#My understand is that a three layer nn with 784 input dimension, 64 hidden neurons, 10 classes output has in all (784+1)*64+(64+1)*10=50890 parameters.
