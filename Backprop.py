@@ -142,30 +142,58 @@ def hold_out(train_im, train_lab, num_hold_out):
     return np.array(hold_out_im), np.array(hold_out_labels), \
            np.array(train_im), np.array(train_lab)
 
-def num_approx_ih(w_ih, train_im, epsilon=.00001):
-    epsilon_v = epsilon*np.ones(w_ih.shape)
-    E_add = forward_ih(train_im, w_ih + epsilon_v)
-    E_sub = forward_ih(train_im, w_ih - epsilon_v)
-    #compute approximation
-    num_approx_ih = numerical_approx_equation(E_add, E_sub)
+def num_approx_ih(w_ih, w_ho, train_im, label, it, epsilon = .01):
 
-    return num_approx_ih
+    z_j = forward_ih(train_im, w_ih)
+    z_j = add_bias_term(z_j)
+    delta_k = get_dk_gradient(w_ho, z_j, label)
+    w_ih_update = backprop_hi(w_ih, w_ho, train_im, delta_k, .01)
 
-def num_approx_ho(g_h_b, w_ho, epsilon=.00001):
-    epsilon_v = epsilon*np.ones(w_ho.shape)
-    E_add = forward_ho(g_h_b, w_ho + epsilon_v)
-    E_sub = forward_ho(g_h_b, w_ho - epsilon_v)
-    #compute approximation
-    num_approx_ho = numerical_approx_equation(E_add, E_sub)
+    w_ih[it][it] = w_ih[it][it] + epsilon
+    z_j_add = forward_ih(train_im, w_ih)
+    z_j_add = add_bias_term(z_j_add)
+    y_add = forward_ho(z_j_add, w_ho)
+    t = one_hot_encoding(label)
+    E_plus = -np.sum(t*(np.log(y_add)))/128
 
-    return num_approx_ho
+    w_ih[it][it] = w_ih[it][it] - (2.0*epsilon)
+    z_j_sub = forward_ih(train_im, w_ih)
+    z_j_sub = add_bias_term(z_j_sub)
+    y_sub = forward_ho(z_j_sub, w_ho)
+    E_sub = -np.sum(t*(np.log(y_sub)))/128
+
+    num = numerical_approx_equation(E_plus, E_sub)
+    return w_ih_update, num
+
+def num_approx_ho(w_ih, w_ho, train_im, label, it, epsilon = .01):
+
+    z_j = forward_ih(train_im, w_ih)
+    z_j = add_bias_term(z_j)
+    delta_k = get_dk_gradient(w_ho, z_j, label)
+    w_ho_update = backprop_oh(w_ho, z_j, delta_k, .01)
+
+    w_ho[it][it] = w_ho[it][it] + epsilon
+    z_j_add = forward_ih(train_im, w_ih)
+    z_j_add = add_bias_term(z_j_add)
+    y_add = forward_ho(z_j_add, w_ho)
+    t = one_hot_encoding(label)
+    E_plus = -np.sum(t*(np.log(y_add)))/128
+
+    w_ho[it][it] = w_ho[it][it] - (2.0*epsilon)
+    z_j_sub = forward_ih(train_im, w_ih)
+    z_j_sub = add_bias_term(z_j_sub)
+    y_sub = forward_ho(z_j_sub, w_ho)
+    E_sub = -np.sum(t*(np.log(y_sub)))/128
+
+    num = numerical_approx_equation(E_plus, E_sub)
+    return w_ho_update, num
 
 def numerical_approx_equation(E_plus, E_minus, epsilon=.00001):
     return (E_plus - E_minus) / (2 * (epsilon*np.ones(E_plus.shape)))
 
-def gradient_checker(num_approx, grad_back):
+def grad_checker(num_approx, grad_back):
     error = abs(num_approx - grad_back)
-    if error < .0000000001:
+    if error < .0001:
         return "It works"
     else:
         return "Check your code"
