@@ -264,7 +264,7 @@ num_hold_out = 10000  # How many images from training used for validation
 lr = 0.0003  #Best: 0.01
 mu, sigma = 0, 0.1   # Parameters of Gaussian to initialize weights
 alpha = 0.9
-batch_size = 64
+batch_size = 128
 
 num_input_units = 784   # Units in the imput layer
 num_hidden_units = 128   # Units in the hidden layer
@@ -359,8 +359,6 @@ for epoch in xrange(40):
         if (early_stopping(val_acc) == True):
             print 'Early stopped'
             break
-
-
 
 # Plot Error
 plt.figure()
