@@ -331,6 +331,7 @@ plt.ylabel('Cross Entropy')
 plt.legend(loc='lower right')
 plt.show(block=False)
 
+#Graph for numerical approx
 '''
 bias_jk = []
 bias_ij = []
@@ -360,33 +361,4 @@ plt.xlabel('Examples')
 plt.ylabel('difference between numerical approx and backprop')
 plt.legend(loc='lower right')
 plt.show(block=False)
-'''
-
-'''
-#Tips and Tricks
-#1. Random Sampling
-batch_i, batch_l = rand_minibatch(tr_i, tr_l, 50000)
-
-#2. sigmoid in Section 4.4
-#in forward_ih change sigmoid to hyperbolic_tangent(a_j)
-
-#3. Initialize the input weights to each unit using a distribution with 0 mean and standard deviation 1/sqrt(fan-in), where the fan-in is the number of inputs to the unit.
-mu = 0
-w_ih = np.random.normal(mu, fan_in(num_input_units+1), (num_input_units+1,num_hidden_units))
-w_ho = np.random.normal(mu, fan_in(num_hidden_units+1), (num_hidden_units+1,num_outputs))
-
-#4 Use momentum, with an alpha of 0.9.
-
-prev_delta_jk = np.zeros(w_ho.shape)
-prev_delta_ij = np.zeros(w_ih.shape)
-
-alpha = 0.9
-w_jk_update = lr * d_Ejk
-w_ho += w_jk_update + (alpha * prev_delta_jk)
-
-w_ij_update = lr * d_Eij
-w_ih += w_ij_update + (alpha * prev_delta_ij)
-
-#store gradients
-prev_delta_jk,prev_delta_ij = w_jk_update, w_ij_update
 '''
