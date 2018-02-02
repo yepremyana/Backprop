@@ -177,6 +177,12 @@ def get_prediction_error(input_i, input_l, w_ih, w_ho):
     pred_l = np.argmax(y_k, 1)   #Predicted labels
     return 100.0 * (np.sum(pred_l == input_l)) / (1.0 * input_l.shape[0]) #Return ACCURACY
 
+def loss_funct(input_i, input_l, w_ih, w_ho):
+    z_j = forward_ih(input_i, w_ih)
+    z_j = add_bias_term(z_j)
+    y = forward_ho(z_j, w_ho)
+    t = one_hot_encoding(input_l)
+    return (-1.0 / len(input_i)) * (np.sum(t * np.log(y)))
 ##############################################
 # IMPLEMENTATION:
 
@@ -220,6 +226,10 @@ w_ho = np.random.normal(mu, sigma, (num_hidden_units+1, num_outputs))     #+1 fo
 tr_acc = []
 val_acc = []
 test_acc = []
+Ltr = []
+Lh = []
+Lte = []
+
 for epochs in xrange (1,20):
 
     num_iterations = int(tr_i.shape[0] / 128.0)
@@ -263,6 +273,11 @@ for epochs in xrange (1,20):
         # tr_accuracy = get_prediction_error(batch_i, batch_l, w_ih, w_ho)
         # acc.append(tr_accuracy)
 
+    #Calculate Entropy
+    Ltr.append(loss_funct(tr_i, tr_l, w_ih, w_ho))
+    Lh.append(loss_funct(hi, hl, w_ih, w_ho))
+    Lte.append(loss_funct(test_i, test_l, w_ih, w_ho))
+
     #Accuracies:
     #Save training, validation & testing errors:
     # tr_acc.append(np.mean(acc)) # Average of training error during training
@@ -277,9 +292,20 @@ plt.figure()
 plt.plot(tr_acc, label='Training Data, (Training Accuracy) = %.2f%s' %(np.max(tr_acc), '%'))
 plt.plot(val_acc, label='Hold-Out Data, (Validation Accuracy) = %.2f%s' %(np.max(val_acc), '%'))
 plt.plot(test_acc, label='Testing Data, (Testing Accuracy) = %.2f%s' %(np.max(test_acc), '%'))
-plt.title('Percent correct classification: SOFTMAX')
+plt.title('Percent correct classification: Backpropagation')
 plt.xlabel('# Epochs')
 plt.ylabel('Percent Correct Classification')
+plt.legend(loc='lower right')
+plt.show(block=False)
+
+# Plot Loss
+plt.figure()
+plt.plot(Ltr, label='Training Data')
+plt.plot(Lh, label='Hold-Out Data')
+plt.plot(Lte, label='Testing Data')
+plt.title('Cross Entropy loss function')
+plt.xlabel('# Epochs')
+plt.ylabel('Cross Entropy')
 plt.legend(loc='lower right')
 plt.show(block=False)
 
