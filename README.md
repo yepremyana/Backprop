@@ -1,3 +1,6 @@
+
+file: Backprop.py
+
 # Using Backpropagation to classify MNIST dataset.
 
 Backpropagation is a supervised neural network commonly used in the field of Machine Learning which utilizes gradient descent. Backpropagation is typically used on neural networks that contain hidden layers. Herein, we built a 3-layer Neural network using Backpropagation with sigma and Softmax activations for image classification of the MNIST dataset. Training of the algorithms was done using gradient descent to minimize the cross entropy loss function. Furthermore, we implemented 'hold-out' testing, 'annealing' and 'early stopping' in order to avoid overfitting and maximize performance. Finally, we improved our model using various tips and tricks. This achieved a classification accuracy of 96.62\% for the initial basic architecture and of 97.76\% for the optimized model including 'training tricks' on handwritten digits. 
@@ -32,6 +35,10 @@ The user may play with the network architecture by changing the parameters found
 
 That's it, hit play and enjoy!
 
+#####
+
+A separate code was written to implement the multilayer neural network named: Backprop_multilayer.py
+This code includes the same functions, but it's written in a cleaner way for multilayer networks.
 
 #####
 The tricks included are:

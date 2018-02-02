@@ -96,9 +96,6 @@ def softmax(activation_k):
 def forward_ih(input_batch, w_input_hidden, derivative=False):
     #input to hidden
     a_j = activation(input_batch, w_input_hidden)   # Weighted sum of inputs
-    #part 4b
-    #z_j = hyperbolic_tangent(a_j, derivative)
-
     z_j = sigmoid(a_j, derivative)                          # Activation Function
     return z_j
 
@@ -240,20 +237,11 @@ for epochs in xrange (1,30):
         w_h1 += backprop(z_j.T, d_h1.T, lr)
         w_ho += backprop(z_h.T, d_k, lr)
 
-        #
-        # w_ih = backprop_hi(w_ih, w_ho, batch_i, d_k, lr) # Update w_ij weights
-        # # 2nd: output to hidden
-        # w_ho = backprop_oh(w_ho, z_j, d_k, lr) # Update w_jk weights
-
-    #Accuracies:
     #Save training, validation & testing errors:
-    # tr_acc.append(np.mean(acc)) # Average of training error during training
     tr_acc.append(get_prediction_error(tr_i, tr_l, w_ih, w_h1, w_ho))
     val_acc.append(get_prediction_error(hi, hl, w_ih, w_h1, w_ho))
     test_acc.append(get_prediction_error(test_i, test_l, w_ih, w_h1, w_ho))
-
-
-
+    
 # Plot Error
 plt.figure()
 plt.plot(tr_acc, label='Training Data, (Training Accuracy) = %.2f%s' %(np.max(tr_acc), '%'))
@@ -264,44 +252,3 @@ plt.xlabel('# Epochs')
 plt.ylabel('Percent Correct Classification')
 plt.legend(loc='lower right')
 plt.show(block=False)
-
-
-#Tips and Tricks
-#1. Random Sampling
-batch_i, batch_l = rand_minibatch(tr_i, tr_l, 50000)
-
-#2. sigmoid in Section 4.4
-#in forward_ih change sigmoid to hyperbolic_tangent(a_j)
-
-#3. Initialize the input weights to each unit using a distribution with 0 mean and standard deviation 1/sqrt(fan-in), where the fan-in is the number of inputs to the unit.
-mu = 0
-w_ih = np.random.normal(mu, fan_in(num_input_units+1), (num_input_units+1,num_hidden_units))
-w_ho = np.random.normal(mu, fan_in(num_hidden_units+1), (num_hidden_units+1,num_outputs))
-
-#4 Use momentum, with an alpha of 0.9.
-
-prev_delta_jk = np.zeros(w_ho.shape)
-prev_delta_ij = np.zeros(w_ih.shape)
-
-alpha = 0.9
-w_jk_update = lr * d_Ejk
-w_ho += w_jk_update + (alpha * prev_delta_jk)
-
-w_ij_update = lr * d_Eij
-w_ih += w_ij_update + (alpha * prev_delta_ij)
-
-#store gradients
-prev_delta_jk,prev_delta_ij = w_jk_update, w_ij_update
-
-
-#gradient gradient_checker (check this)
-approx_ih = num_approx_ih(w_ih, batch_i_b)
-approx_ho = num_approx_ho(z_i_b, w_ho)
-
-# Backwards prop
-#w_ho, w_ih, grad_ho, grad_ih = backprop(batch_i,batch_1h_l,y_k, z_i, w_ho, w_ih)
-
-error_ih = gradient_checker(approx_ih, grad_ih)
-error_ho = gradient_checker(approx_ho, grad_ho)
-
-#My understand is that a three layer nn with 784 input dimension, 64 hidden neurons, 10 classes output has in all (784+1)*64+(64+1)*10=50890 parameters.
