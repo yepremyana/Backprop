@@ -97,9 +97,9 @@ def forward_ih(input_batch, w_input_hidden, derivative=False):
     #input to hidden
     a_j = activation(input_batch, w_input_hidden)   # Weighted sum of inputs
     #part 4b
-    #z_j = hyperbolic_tangent(a_j, derivative)
+    z_j = hyperbolic_tangent(a_j, derivative)
 
-    z_j = sigmoid(a_j, derivative)                          # Activation Function
+    #z_j = sigmoid(a_j, derivative)                          # Activation Function
     return z_j
 
 def forward_ho(hidden_activations, w_hidden_output):#, bias_o):
@@ -213,23 +213,29 @@ def loss_funct(input_i, input_l, w_ih, w_ho):
     #Normalize w.r.t # training examples and #categories
     return (-1.0 / (input_i.shape[0] * w_ho.shape[1])) * (np.sum(t * np.log(y)))
 
+def early_stopping(v_acc):
+    if (all(v_acc[-1] < i for i in [v_acc[-2], v_acc[-3], v_acc[-4], v_acc[-5], v_acc[-6]])): return True
+
 ##############################################
-# IMPLEMENTATION:
 
 # PARAMETERS:
 num_train = 60000    # Load num_train images
 num_test = 10000      # Load num_test images
 num_hold_out = 10000  # How many images from training used for validation
 
-lr = 0.01
-#lr = 0.0001   # Learning rate
+lr = 0.0003  #Best: 0.01
 mu, sigma = 0, 0.1   # Parameters of Gaussian to initialize weights
-#alpha = 0.9
-batch_size = 128
+alpha = 0.9
+batch_size = 2
 
 num_input_units = 784   # Units in the imput layer
-num_hidden_units = 64   # Units in the hidden layer
+num_hidden_units = 128   # Units in the hidden layer
 num_outputs = 10        # Units in the output layer
+
+earlyStop = False       # Stop if validation error < 5 previous epochs
+
+##############################################
+# IMPLEMENTATION:
 
 # 1. Load Data
 tr_i, tr_l, test_i, test_l = load_data(num_train, num_test)
@@ -244,13 +250,13 @@ hi = add_bias_term(hi)
 test_i = add_bias_term(test_i)
 
 # 3. Initialize weights
-w_ih = np.random.normal(mu, sigma, (num_input_units+1, num_hidden_units)) #+1 for bias
-w_ho = np.random.normal(mu, sigma, (num_hidden_units+1, num_outputs))     #+1 for bias
+#w_ih = np.random.normal(mu, sigma, (num_input_units+1, num_hidden_units)) #+1 for bias
+#w_ho = np.random.normal(mu, sigma, (num_hidden_units+1, num_outputs))     #+1 for bias
 
 #4c
-#mu = 0
-#w_ih = np.random.normal(mu, fan_in(num_input_units+1), (num_input_units+1,num_hidden_units))
-#w_ho = np.random.normal(mu, fan_in(num_hidden_units+1), (num_hidden_units+1,num_outputs))
+mu = 0
+w_ih = np.random.normal(mu, fan_in(num_input_units+1), (num_input_units+1,num_hidden_units))
+w_ho = np.random.normal(mu, fan_in(num_hidden_units+1), (num_hidden_units+1,num_outputs))
 
 # 4. TRAIN
 tr_acc = []
@@ -260,20 +266,19 @@ Ltr = []
 Lh = []
 Lte = []
 
-for epochs in xrange (1,20):
+for epoch in xrange(40):
+    print epoch
 
     num_iterations = int(tr_i.shape[0] / 128.0)
     acc = []
     #4a
-    #tr_i, tr_l = rand_minibatch(tr_i, tr_l,50000)
+    tr_i, tr_l = rand_minibatch(tr_i, tr_l,50000)
 
-    #prev_update_jk = np.zeros(w_ho.shape)
-    #prev_update_ij = np.zeros(w_ih.shape)
+    prev_update_jk = np.zeros(w_ho.shape)
+    prev_update_ij = np.zeros(w_ih.shape)
 
-    #print epochs
     for it in xrange(0,num_iterations):
         # Create minibatch
-        #print it
         batch_i, batch_l = minibatch(tr_i, tr_l, it, batch_size)
 
         #For_Prop: Input to hidden
@@ -286,22 +291,18 @@ for epochs in xrange (1,20):
         d_k = get_dk_gradient(w_ho, z_j, batch_l)
         # 1st: hidden to input (Bc we need old w_jk)
         w_ih_update = backprop_hi(w_ih, w_ho, batch_i, d_k, lr) # Update w_ij weights
-        w_ih += w_ih_update
+        #w_ih += w_ih_update
 
         #4d
-        #w_ih += w_ih_update + (alpha * prev_update_ij)
+        w_ih += w_ih_update + (alpha * prev_update_ij)
 
         # 2nd: output to hidden
         w_ho_update = backprop_oh(w_ho, z_j, d_k, lr) # Update w_jk weights
-        w_ho += w_ho_update
+        #w_ho += w_ho_update
 
         #4d
-        #w_ho += w_ho_update + (alpha * prev_update_jk)
-        #prev_update_jk,prev_update_ij = w_ho_update, w_ih_update
-
-        #Calculate error during training:
-        # tr_accuracy = get_prediction_error(batch_i, batch_l, w_ih, w_ho)
-        # acc.append(tr_accuracy)
+        w_ho += w_ho_update + (alpha * prev_update_jk)
+        prev_update_jk,prev_update_ij = w_ho_update, w_ih_update
 
     #Calculate Entropy
     Ltr.append(loss_funct(tr_i, tr_l, w_ih, w_ho))
@@ -315,6 +316,12 @@ for epochs in xrange (1,20):
     val_acc.append(get_prediction_error(hi, hl, w_ih, w_ho))
     test_acc.append(get_prediction_error(test_i, test_l, w_ih, w_ho))
 
+    # Early stopping:
+    if (earlyStop == True and epoch>7):
+        if (early_stopping(val_acc) == True):
+            print 'Early stopped'
+            break
+
 
 
 # Plot Error
@@ -322,7 +329,7 @@ plt.figure()
 plt.plot(tr_acc, label='Training Data, (Training Accuracy) = %.2f%s' %(np.max(tr_acc), '%'))
 plt.plot(val_acc, label='Hold-Out Data, (Validation Accuracy) = %.2f%s' %(np.max(val_acc), '%'))
 plt.plot(test_acc, label='Testing Data, (Testing Accuracy) = %.2f%s' %(np.max(test_acc), '%'))
-plt.title('Percent correct classification: Backpropagation')
+plt.title('Percent correct classification: Backpropagation and Shuffling')
 plt.xlabel('# Epochs')
 plt.ylabel('Percent Correct Classification')
 plt.legend(loc='lower right')
@@ -366,14 +373,3 @@ w_ih += w_ij_update + (alpha * prev_delta_ij)
 
 #store gradients
 prev_delta_jk,prev_delta_ij = w_jk_update, w_ij_update
-
-
-#gradient gradient_checker (check this)
-approx_ih = num_approx_ih(w_ih, batch_i_b)
-approx_ho = num_approx_ho(z_i_b, w_ho)
-
-# Backwards prop
-#w_ho, w_ih, grad_ho, grad_ih = backprop(batch_i,batch_1h_l,y_k, z_i, w_ho, w_ih)
-
-error_ih = gradient_checker(approx_ih, grad_ih)
-error_ho = gradient_checker(approx_ho, grad_ho)
