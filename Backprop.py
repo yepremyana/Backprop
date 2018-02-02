@@ -210,7 +210,9 @@ def loss_funct(input_i, input_l, w_ih, w_ho):
     z_j = add_bias_term(z_j)
     y = forward_ho(z_j, w_ho)
     t = one_hot_encoding(input_l)
-    return (-1.0 / len(input_i)) * (np.sum(t * np.log(y)))
+    #Normalize w.r.t # training examples and #categories
+    return (-1.0 / x.shape[0] * w_ho.shape[1]) * (np.sum(t * np.log(y)))
+
 ##############################################
 # IMPLEMENTATION:
 
