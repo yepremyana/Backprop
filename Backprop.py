@@ -126,7 +126,6 @@ def delta_k(y, t):
 # BackProp: Hidden to Input
 def backprop_hi(w_ih, w_ho, x, d_k, lr):
     g_h_der = forward_ih(batch_i, w_ih, derivative=True)             # g'(a_j)
-    # d_j =  g'(a_j) * sum(wjk * d_k) !!!!! THIS IS THE CRITICAL STEP, we do not take the row of Wjk corresponding to their biases
     d_j = np.transpose(g_h_der) * (np.dot(w_ho[1:,:], np.transpose(d_k)))
     d_Eij = np.transpose( np.dot(d_j, x) )                         # -dEij = d_j * x_i
 
@@ -174,8 +173,8 @@ def num_approx_ho(w_ih, w_ho, train_im, label, it, ip, epsilon = .01):
     num = numerical_approx_equation(E_plus, E_sub)
     return w_ho_update, num
 
-def numerical_approx_equation(E_plus, E_minus, epsilon=.00001):
-    return (E_plus - E_minus) / (2 * (epsilon*np.ones(E_plus.shape)))
+def numerical_approx_equation(E_plus, E_minus, epsilon = .01):
+    return (E_plus - E_minus) / (2.0 * (epsilon))
 
 def grad_checker(num_approx, grad_back):
     error = abs(num_approx - grad_back)
@@ -332,7 +331,38 @@ plt.ylabel('Cross Entropy')
 plt.legend(loc='lower right')
 plt.show(block=False)
 
+'''
+bias_jk = []
+bias_ij = []
+num_ij = []
+num_jk = []
+#batch_i, batch_l = minibatch(tr_i, tr_l, 3, 1)
+for i in xrange(10):
+    batch_i, batch_l = minibatch(tr_i, tr_l, i+10, 1)
+    exact_ij, grad_num_ij = num_approx_ih(w_ih,w_ho,batch_i,batch_l,i,i)
+    exact_jk, grad_num_jk = num_approx_ho(w_ih,w_ho,batch_i,batch_l,i,i)
+    exact_b_jk, grad_num_b_jk = num_approx_ho(w_ih,w_ho,batch_i,batch_l,0,i)
+    exact_b_ij, grad_num_b_ij = num_approx_ih(w_ih,w_ho,batch_i,batch_l,0,i)
+    num_ij.append(abs(grad_num_ij - exact_ij[i][i]))
+    num_jk.append(abs(grad_num_jk - exact_jk[i][i]))
+    bias_jk.append(abs(grad_num_b_jk - exact_b_jk[0][i]))
+    bias_ij.append(abs(grad_num_b_ij - exact_b_ij[0][i]))
 
+plt.figure()
+plt.plot(num_ij,'ro', label='Changing weight in w_ij')
+plt.plot(num_jk, 'bo', label='Changing weight in w_jk')
+plt.plot(bias_ij, 'go',label='Changing weight in bias w_ij')
+plt.plot(bias_jk, 'ko',label='Changing weight in bias w_jk')
+plt.axhline(y=0.0001, color='r', linestyle='-')
+plt.ylim(ymin=0)
+plt.title('Gradient checker')
+plt.xlabel('Examples')
+plt.ylabel('difference between numerical approx and backprop')
+plt.legend(loc='lower right')
+plt.show(block=False)
+'''
+
+'''
 #Tips and Tricks
 #1. Random Sampling
 batch_i, batch_l = rand_minibatch(tr_i, tr_l, 50000)
@@ -359,3 +389,4 @@ w_ih += w_ij_update + (alpha * prev_delta_ij)
 
 #store gradients
 prev_delta_jk,prev_delta_ij = w_jk_update, w_ij_update
+'''
