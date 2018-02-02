@@ -142,48 +142,34 @@ def hold_out(train_im, train_lab, num_hold_out):
     return np.array(hold_out_im), np.array(hold_out_labels), \
            np.array(train_im), np.array(train_lab)
 
-def num_approx_ih(w_ih, w_ho, train_im, label, it, epsilon = .01):
+def num_approx_ih(w_ih, w_ho, train_im, label, it,ip, epsilon = .01):
 
     z_j = forward_ih(train_im, w_ih)
     z_j = add_bias_term(z_j)
     delta_k = get_dk_gradient(w_ho, z_j, label)
     w_ih_update = backprop_hi(w_ih, w_ho, train_im, delta_k, .01)
 
-    w_ih[it][it] = w_ih[it][it] + epsilon
-    z_j_add = forward_ih(train_im, w_ih)
-    z_j_add = add_bias_term(z_j_add)
-    y_add = forward_ho(z_j_add, w_ho)
-    t = one_hot_encoding(label)
-    E_plus = -np.sum(t*(np.log(y_add)))/128
+    w_ih[it][ip] = w_ih[it][ip] + epsilon
+    E_plus = loss_funct(train_im, label, w_ih, w_ho)
 
-    w_ih[it][it] = w_ih[it][it] - (2.0*epsilon)
-    z_j_sub = forward_ih(train_im, w_ih)
-    z_j_sub = add_bias_term(z_j_sub)
-    y_sub = forward_ho(z_j_sub, w_ho)
-    E_sub = -np.sum(t*(np.log(y_sub)))/128
+    w_ih[it][ip] = w_ih[it][ip] - (2.0*epsilon)
+    E_sub = loss_funct(train_im, label, w_ih, w_ho)
 
     num = numerical_approx_equation(E_plus, E_sub)
     return w_ih_update, num
 
-def num_approx_ho(w_ih, w_ho, train_im, label, it, epsilon = .01):
+def num_approx_ho(w_ih, w_ho, train_im, label, it, ip, epsilon = .01):
 
     z_j = forward_ih(train_im, w_ih)
     z_j = add_bias_term(z_j)
     delta_k = get_dk_gradient(w_ho, z_j, label)
     w_ho_update = backprop_oh(w_ho, z_j, delta_k, .01)
 
-    w_ho[it][it] = w_ho[it][it] + epsilon
-    z_j_add = forward_ih(train_im, w_ih)
-    z_j_add = add_bias_term(z_j_add)
-    y_add = forward_ho(z_j_add, w_ho)
-    t = one_hot_encoding(label)
-    E_plus = -np.sum(t*(np.log(y_add)))/128
+    w_ho[it][ip] = w_ho[it][ip] + epsilon
+    E_plus = loss_funct(train_im, label, w_ih, w_ho)
 
-    w_ho[it][it] = w_ho[it][it] - (2.0*epsilon)
-    z_j_sub = forward_ih(train_im, w_ih)
-    z_j_sub = add_bias_term(z_j_sub)
-    y_sub = forward_ho(z_j_sub, w_ho)
-    E_sub = -np.sum(t*(np.log(y_sub)))/128
+    w_ho[it][ip] = w_ho[it][ip] - (2.0*epsilon)
+    E_sub = loss_funct(train_im, label, w_ih, w_ho)
 
     num = numerical_approx_equation(E_plus, E_sub)
     return w_ho_update, num
