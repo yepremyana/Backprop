@@ -142,7 +142,7 @@ def hold_out(train_im, train_lab, num_hold_out):
     return np.array(hold_out_im), np.array(hold_out_labels), \
            np.array(train_im), np.array(train_lab)
 
-def num_approx_ih(w_ih, train_im, epsilon = .00001):
+def num_approx_ih(w_ih, train_im, epsilon=.00001):
     epsilon_v = epsilon*np.ones(w_ih.shape)
     E_add = forward_ih(train_im, w_ih + epsilon_v)
     E_sub = forward_ih(train_im, w_ih - epsilon_v)
@@ -151,7 +151,7 @@ def num_approx_ih(w_ih, train_im, epsilon = .00001):
 
     return num_approx_ih
 
-def num_approx_ho(g_h_b, w_ho, epsilon = .00001):
+def num_approx_ho(g_h_b, w_ho, epsilon=.00001):
     epsilon_v = epsilon*np.ones(w_ho.shape)
     E_add = forward_ho(g_h_b, w_ho + epsilon_v)
     E_sub = forward_ho(g_h_b, w_ho - epsilon_v)
@@ -160,7 +160,7 @@ def num_approx_ho(g_h_b, w_ho, epsilon = .00001):
 
     return num_approx_ho
 
-def numerical_approx_equation(E_plus, E_minus, epsilon = .00001):
+def numerical_approx_equation(E_plus, E_minus, epsilon=.00001):
     return (E_plus - E_minus) / (2 * (epsilon*np.ones(E_plus.shape)))
 
 def gradient_checker(num_approx, grad_back):
@@ -188,7 +188,7 @@ num_hold_out = 10000  # How many images from training used for validation
 lr = 0.01
 #lr = 0.0001   # Learning rate
 mu, sigma = 0, 0.1   # Parameters of Gaussian to initialize weights
-
+#alpha = 0.9
 batch_size = 128
 
 num_input_units = 784   # Units in the imput layer
@@ -227,6 +227,9 @@ for epochs in xrange (1,20):
     #4a
     #tr_i, tr_l = rand_minibatch(tr_i, tr_l,50000)
 
+    #prev_update_jk = np.zeros(w_ho.shape)
+    #prev_update_ij = np.zeros(w_ih.shape)
+
     #print epochs
     for it in xrange(0,num_iterations):
         # Create minibatch
@@ -244,9 +247,18 @@ for epochs in xrange (1,20):
         # 1st: hidden to input (Bc we need old w_jk)
         w_ih_update = backprop_hi(w_ih, w_ho, batch_i, d_k, lr) # Update w_ij weights
         w_ih += w_ih_update
+
+        #4d
+        #w_ih += w_ih_update + (alpha * prev_update_ij)
+
         # 2nd: output to hidden
         w_ho_update = backprop_oh(w_ho, z_j, d_k, lr) # Update w_jk weights
         w_ho += w_ho_update
+
+        #4d
+        #w_ho += w_ho_update + (alpha * prev_update_jk)
+        #prev_update_jk,prev_update_ij = w_ho_update, w_ih_update
+
         #Calculate error during training:
         # tr_accuracy = get_prediction_error(batch_i, batch_l, w_ih, w_ho)
         # acc.append(tr_accuracy)
